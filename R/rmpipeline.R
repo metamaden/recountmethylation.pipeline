@@ -68,7 +68,7 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' @return Creates new HDF5 database from DNAm signal data.
 #' @export
 
-h5db_fromsignal <- function(version, verbose = TRUE, gsmint = 60,
+dtables_fromsignal <- function(version, verbose = TRUE, gsmint = 60,
                             fnstem = "mdat.compilation", sepval = " ", getnb = FALSE,
                             idats.path = paste("recount-methylation-files", "idats", sep = "/"),
                             dest.path = paste("recount-methylation-analysis",
