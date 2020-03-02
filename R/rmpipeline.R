@@ -50,6 +50,128 @@ get.metadata <- function(title, version, pname = "rmpipeline",
   return(mdl)
 }
 
+#----------------------------
+# Make data tables from IDATs
+#----------------------------
+
+#' Make data tables from IDATs
+#' 
+#' Make data tables from IDATs, including red and green channel signals and noob-normalized Beta-values. 
+#' This function should be run from the "recount-methylation" base directory.
+#' 
+#' @param version Version of the run for data table filenames.
+#' @param verbose Whether to return verbose notifications.
+#' @param gsmint Number of GSMs to process at a time, typically runs best near 50 samples.
+#' @param fnstem Filename stem for data tables.
+#' @param sepval Separator symbol for data being written.
+#' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
+#' @return Creates new HDF5 database from DNAm signal data.
+#' @export
+
+h5db.fromsignal <- function(version, verbose = TRUE, gsmint = 60,
+                            fnstem = "mdat.compilation", sepval = " ", getnb = FALSE,
+                            idats.path = paste("recount-methylation-files", "idats", sep = "/"),
+                            dest.path = paste("recount-methylation-analysis", 
+                                              "files", "mdata", "compilations", sep = "/")){
+  
+  # get run metadata
+  runmd <- get.metadata(version, "notitle")
+  nts = runmd[["timestamp"]]
+  
+  # get valid gsms idats dir
+  idats.lf = list.files(idats.path)
+  which.valid1 = grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4, nchar(idats.lf)))
+  which.valid2 = grepl(".*hlink.*", idats.lf)
+  idats.valid = idats.lf[which.valid1 & which.valid2]
+  gsmu = gsub("\\..*", "", idats.valid)
+  gsmu = gsmu[grepl("^GSM.*", gsmu)]
+  gsmu = unique(gsmu)
+  
+  # determine target idats
+  # note: add max timestamps filter
+  gpath = c()
+  for(i in 1:length(gsmu)){
+    cont.cond  <- FALSE
+    g = gsmu[i]
+    gfilt = grepl(paste0(".*", g, ".*"), idats.valid)
+    ig = idats.valid[gfilt]
+    igv.red = ig[grepl(".*_Red.*", ig)][1]
+    # check for matched green channel file
+    while(length(ig.red) > 0 & !cont.cond){
+      ig.red <- igv.red[1]
+      fchan.filt = grepl(gsub("_Red.*", "", ig.red), ig) & grepl(".*_Grn.*", ig)
+      ig.grn = ig[fchan.filt][1]
+      cont.cond = length(ig.red) == 1 & length(ig.grn) == 1
+      igv.red[!igv.red == ig.red]
+    }
+    if(cont.cond){
+      gpath = c(gpath, gsub("_Red.*", "", ig.red))
+    }
+    if(verbose){message(
+      "Finished validating idat fn's for sample ", i)
+    }
+  }
+  gsmii = seq(1, length(gsmu), gsmint)
+  
+  # make new data paths
+  reds.fn <- paste(paste("redsignal", nts, version, sep = "_"), 
+                   fnstem, sep = ".")
+  grns.fn <- paste(paste("greensignal", nts, version, sep = "_"), 
+                   fnstem, sep = ".")
+  reds.path = paste(destpath, reds.fn, sep = "/")
+  grns.path = paste(destpath, grns.fn, sep = "/")
+  if(getnb){
+    nb.fn <- paste(paste("noobbeta", nts, version, sep = "_"), 
+                   fnstem, sep = ".")
+    nb.path = paste(destpath, nb.fn, sep = "/")
+  }
+  
+  # instantiate new empty data tables
+  cn = c("gsmi")
+  rgi = minfi::read.metharray(c(paste(idats.path, gpath[1:2], sep = "/")))
+  nbi = minfi::preprocessNoob(rgi)
+  rgcni = colnames(t(getRed(rgi)))
+  grcni = colnames(t(getGreen(rgi)))
+  rgcni == grcni
+  rgcn = matrix(c(cn, colnames(t(getRed(rgi)))), nrow = 1)
+  nbcn = matrix(c(cn, colnames(t(getBeta(nbi)))), nrow = 1)
+  fwrite(rgcn, reds.path, sep = sepval, append = FALSE)
+  fwrite(rgcn, grns.path, sep = sepval, append = FALSE)
+  if(getnb){
+    fwrite(nbcn, nb.path, sep = sepval, append = FALSE)
+  }
+  
+  # append new methdata
+  tt = Sys.time()
+  for(i in 1:length(gsmii)){
+    gi = gsmii[i]
+    # read in new data
+    pathl = paste(idats.path, gpath[gi:(gi + gsmint - 1)], sep = "/")
+    rgi = minfi::read.metharray(c(pathl))
+    
+    # get data matrices
+    redi = matrix(c(colnames(rgi), t(getRed(rgi))), ncol = nrow(rgi) + 1)
+    grni = matrix(c(colnames(rgi), t(getGreen(rgi))), ncol = nrow(rgi) + 1)
+    
+    # append new data
+    data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
+    data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
+    
+    # parse noob-normalized data option
+    if(getnb){
+      gsi = preprocessNoob(rgi)
+      nbi = matrix(c(colnames(gsi), t(getBeta(rgi))), ncol = nrow(gsi) + 1)
+      data.table::fwrite(nbi, grns.path, sep = sepval, append = TRUE)
+    }
+    
+    if(verbose){
+      message("Finished gsmi ", gi, " to ", gi + gsmint - 1, 
+              ", time : ", Sys.time() - tt)
+    }
+  }
+  return(NULL)
+}
+
 #------------------------------------
 # Make and populate the HDF5 database
 #------------------------------------
@@ -234,126 +356,44 @@ make.h5db <- function(dbn, fnl, rmax = 35500; cmax = 622399, newtables = TRUE,
   return(NULL)
 }
 
-#----------------------------
-# Make data tables from IDATs
-#----------------------------
+#-----------------------
+# Make the SE-H5 objects
+#-----------------------
 
-#' Make data tables from IDATs
-#' 
-#' Make data tables from IDATs, including red and green channel signals and noob-normalized Beta-values. 
-#' This function should be run from the "recount-methylation" base directory.
-#' 
-#' @param version Version of the run for data table filenames.
-#' @param verbose Whether to return verbose notifications.
-#' @param gsmint Number of GSMs to process at a time, typically runs best near 50 samples.
-#' @param fnstem Filename stem for data tables.
-#' @param sepval Separator symbol for data being written.
-#' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
-#' @return Creates new HDF5 database from DNAm signal data.
+#' Append phenotype data to a SummarizedExperiment object
+#'
+#' Append phenotype data to a SummarizedExperiment object
+#'
+#' @param mdp Metadata object (columns are fields, rows are GSMs/samples).
+#' @param se SummarizedExperiment object.
+#' @return SummarizedExperiment object with appended phenotype data.
 #' @export
-
-h5db.fromsignal <- function(version, verbose = TRUE, gsmint = 60,
-                            fnstem = "mdat.compilation", sepval = " ", getnb = FALSE,
-                            idats.path = paste("recount-methylation-files", "idats", sep = "/"),
-                            dest.path = paste("recount-methylation-analysis", 
-                                              "files", "mdata", "compilations", sep = "/")){
-  
-  # get run metadata
-  runmd <- get.metadata(version, "notitle")
-  nts = runmd[["timestamp"]]
-  
-  # get valid gsms idats dir
-  idats.lf = list.files(idats.path)
-  which.valid1 = grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4, nchar(idats.lf)))
-  which.valid2 = grepl(".*hlink.*", idats.lf)
-  idats.valid = idats.lf[which.valid1 & which.valid2]
-  gsmu = gsub("\\..*", "", idats.valid)
-  gsmu = gsmu[grepl("^GSM.*", gsmu)]
-  gsmu = unique(gsmu)
-  
-  # determine target idats
-  # note: add max timestamps filter
-  gpath = c()
-  for(i in 1:length(gsmu)){
-    cont.cond  <- FALSE
-    g = gsmu[i]
-    gfilt = grepl(paste0(".*", g, ".*"), idats.valid)
-    ig = idats.valid[gfilt]
-    igv.red = ig[grepl(".*_Red.*", ig)][1]
-    # check for matched green channel file
-    while(length(ig.red) > 0 & !cont.cond){
-      ig.red <- igv.red[1]
-      fchan.filt = grepl(gsub("_Red.*", "", ig.red), ig) & grepl(".*_Grn.*", ig)
-      ig.grn = ig[fchan.filt][1]
-      cont.cond = length(ig.red) == 1 & length(ig.grn) == 1
-      igv.red[!igv.red == ig.red]
-    }
-    if(cont.cond){
-      gpath = c(gpath, gsub("_Red.*", "", ig.red))
-    }
-    if(verbose){message(
-      "Finished validating idat fn's for sample ", i)
-      }
-  }
-  gsmii = seq(1, length(gsmu), gsmint)
-  
-  # make new data paths
-  reds.fn <- paste(paste("redsignal", nts, version, sep = "_"), 
-                   fnstem, sep = ".")
-  grns.fn <- paste(paste("greensignal", nts, version, sep = "_"), 
-                   fnstem, sep = ".")
-  reds.path = paste(destpath, reds.fn, sep = "/")
-  grns.path = paste(destpath, grns.fn, sep = "/")
-  if(getnb){
-    nb.fn <- paste(paste("noobbeta", nts, version, sep = "_"), 
-                   fnstem, sep = ".")
-    nb.path = paste(destpath, nb.fn, sep = "/")
-  }
-  
-  # instantiate new empty data tables
-  cn = c("gsmi")
-  rgi = minfi::read.metharray(c(paste(idats.path, gpath[1:2], sep = "/")))
-  nbi = minfi::preprocessNoob(rgi)
-  rgcni = colnames(t(getRed(rgi)))
-  grcni = colnames(t(getGreen(rgi)))
-  rgcni == grcni
-  rgcn = matrix(c(cn, colnames(t(getRed(rgi)))), nrow = 1)
-  nbcn = matrix(c(cn, colnames(t(getBeta(nbi)))), nrow = 1)
-  fwrite(rgcn, reds.path, sep = sepval, append = FALSE)
-  fwrite(rgcn, grns.path, sep = sepval, append = FALSE)
-  if(getnb){
-    fwrite(nbcn, nb.path, sep = sepval, append = FALSE)
-  }
-  
-  # append new methdata
-  tt = Sys.time()
-  for(i in 1:length(gsmii)){
-    gi = gsmii[i]
-    # read in new data
-    pathl = paste(idats.path, gpath[gi:(gi + gsmint - 1)], sep = "/")
-    rgi = minfi::read.metharray(c(pathl))
-    
-    # get data matrices
-    redi = matrix(c(colnames(rgi), t(getRed(rgi))), ncol = nrow(rgi) + 1)
-    grni = matrix(c(colnames(rgi), t(getGreen(rgi))), ncol = nrow(rgi) + 1)
-    
-    # append new data
-    data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
-    data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
-    
-    # parse noob-normalized data option
-    if(getnb){
-      gsi = preprocessNoob(rgi)
-      nbi = matrix(c(colnames(gsi), t(getBeta(rgi))), ncol = nrow(gsi) + 1)
-      data.table::fwrite(nbi, grns.path, sep = sepval, append = TRUE)
-    }
-    
-    if(verbose){
-      message("Finished gsmi ", gi, " to ", gi + gsmint - 1, 
-              ", time : ", Sys.time() - tt)
-    }
-  }
-  return(NULL)
+se.addpheno <- function(mdp, se){
+  # Adds pheno data to a SummarizedExperiment objects
+  mdp <- mdp[mdp$basename %in% colnames(se),]
+  bnv <- colnames(se)
+  gsmv <- gsub("\\..*", "", bnv)
+  gsmfilt <- !gsmv %in% mdp$gsm
+  gsm.ov <- gsmv[gsmfilt]
+  bnv.ov <- bnv[gsmfilt]
+  # add na values
+  nacol <- rep("NA", length(gsm.ov))
+  mdp.ov <- matrix(c(gsm.ov,
+                     rep(nacol, 6),
+                     bnv.ov,
+                     rep(nacol, 11)), 
+                   nrow = length(gsm.ov))
+  colnames(mdp.ov) <- colnames(mdp)
+  mdp <- rbind(mdp, mdp.ov)
+  mdp <- mdp[order(match(mdp$gsm, gsmv)),]
+  identical(mdp$gsm, gsmv)
+  # add valid basenames
+  mdp$basename <- colnames(se)
+  rownames(mdp) <- colnames(se)
+  identical(rownames(mdp), colnames(se))
+  # append pheno to se object
+  minfi::pData(se) <- DataFrame(mdp)
+  return(se)
 }
 
 #' Use DelayedArray function to store H5 SummarizedExperiment directory
@@ -473,40 +513,4 @@ make.h5se <- function(newfn, dsn.data1, dsn.data2 = NULL,
             Sys.time() - t1)
   }
   return(TRUE)
-}
-
-#' Append phenotype data to a SummarizedExperiment object
-#'
-#' Append phenotype data to a SummarizedExperiment object
-#'
-#' @param mdp Metadata object (columns are fields, rows are GSMs/samples).
-#' @param se SummarizedExperiment object.
-#' @return SummarizedExperiment object with appended phenotype data.
-#' @export
-se.addpheno <- function(mdp, se){
-  # Adds pheno data to a SummarizedExperiment objects
-  mdp <- mdp[mdp$basename %in% colnames(se),]
-  bnv <- colnames(se)
-  gsmv <- gsub("\\..*", "", bnv)
-  gsmfilt <- !gsmv %in% mdp$gsm
-  gsm.ov <- gsmv[gsmfilt]
-  bnv.ov <- bnv[gsmfilt]
-  # add na values
-  nacol <- rep("NA", length(gsm.ov))
-  mdp.ov <- matrix(c(gsm.ov,
-                     rep(nacol, 6),
-                     bnv.ov,
-                     rep(nacol, 11)), 
-                   nrow = length(gsm.ov))
-  colnames(mdp.ov) <- colnames(mdp)
-  mdp <- rbind(mdp, mdp.ov)
-  mdp <- mdp[order(match(mdp$gsm, gsmv)),]
-  identical(mdp$gsm, gsmv)
-  # add valid basenames
-  mdp$basename <- colnames(se)
-  rownames(mdp) <- colnames(se)
-  identical(rownames(mdp), colnames(se))
-  # append pheno to se object
-  minfi::pData(se) <- DataFrame(mdp)
-  return(se)
 }
