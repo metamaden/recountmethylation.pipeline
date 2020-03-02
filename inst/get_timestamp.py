@@ -25,5 +25,4 @@ def gettime_ntp(addr='time.nist.gov'):
     return str(t)
 
 if __name__ == "__main__":
-    print("Getting timestamp...")
-    gettime_ntp()
+    print(gettime_ntp())
