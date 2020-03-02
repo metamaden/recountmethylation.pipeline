@@ -88,7 +88,7 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 
   # get valid gsms idats dir
   if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
-  idats.lf = list.files(idats.path)
+  idats.lf = list.files(idatspath)
   which.valid1 = grepl("\\.idat$", substr(idats.lf,
                                           nchar(idats.lf) - 4,
                                           nchar(idats.lf))) # idat ext
@@ -152,16 +152,16 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
   # instantiate new empty data tables with probes as colnames
   cn = c("gsmi")
   rgi = minfi::read.metharray(c(paste(idatspath, gpath[1:2], sep = "/")))
-  rgcni = colnames(t(getRed(rgi))) # grcni = colnames(t(getGreen(rgi)))
+  rgcni = colnames(t(minfi::getRed(rgi))) # grcni = colnames(t(getGreen(rgi)))
   # rgcni == grcni
-  rgcn = matrix(c(cn, colnames(t(getRed(rgi)))), nrow = 1)
-  data.table::fwrite(rgcn, reds.path, sep = sepval, append = FALSE)
-  data.table::fwrite(rgcn, grns.path, sep = sepval, append = FALSE)
+  rgcn = matrix(c(cn, rgcni), nrow = 1)
+  data.table::fwrite(rgcn, reds.path, sep = sepval, append = FALSE, col.names = F)
+  data.table::fwrite(rgcn, grns.path, sep = sepval, append = FALSE, col.names = F)
   if(getnb){
     if(verbose){message("Instantiating noob beta table...")}
     nbi = minfi::preprocessNoob(rgi)
     nbcn = matrix(c(cn, colnames(t(getBeta(nbi)))), nrow = 1)
-    data.table::fwrite(nbcn, nb.path, sep = sepval, append = FALSE)
+    data.table::fwrite(nbcn, nb.path, sep = sepval, append = FALSE, col.names = F)
   }
 
   # append new methdata
@@ -169,12 +169,12 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
   for(i in 1:length(gsmii)){
     gi = gsmii[[i]]
     # read in new data
-    pathl = paste(idats.path, gpath[gi], sep = "/")
+    pathl = paste(idatspath, gpath[gi], sep = "/")
     rgi = minfi::read.metharray(c(pathl))
 
     # get data matrices
-    redi = matrix(c(colnames(rgi), t(getRed(rgi))), ncol = nrow(rgi) + 1)
-    grni = matrix(c(colnames(rgi), t(getGreen(rgi))), ncol = nrow(rgi) + 1)
+    redi = matrix(c(colnames(rgi), t(minfi::getRed(rgi))), ncol = nrow(rgi) + 1)
+    grni = matrix(c(colnames(rgi), t(minfi::getGreen(rgi))), ncol = nrow(rgi) + 1)
 
     # append new data
     data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
@@ -182,8 +182,8 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 
     # parse noob-normalized data option
     if(getnb){
-      gsi = preprocessNoob(rgi)
-      nbi = matrix(c(colnames(gsi), t(getBeta(rgi))), ncol = nrow(gsi) + 1)
+      gsi = minfi::preprocessNoob(rgi)
+      nbi = matrix(c(colnames(gsi), t(minfi::getBeta(rgi))), ncol = nrow(gsi) + 1)
       data.table::fwrite(nbi, nb.path, sep = sepval, append = TRUE)
     }
 
@@ -203,8 +203,9 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 #' Append metadata to HDF5 or SE object
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
-#' @param dbn Name of the HDF5 database targeted.
-#' @param fnl List of signal tables containing data to be added.
+#' @param dbn Name of H5 dataset, passed from make_h5db().
+#' @param fnl List of signal data table filenames, corresponding (1:1) to names for new h5 datasets in dsnl.
+#' @param fnpath Path to signal data tables.
 #' @param dsnl List of data set names in HDF5 database to be populated.
 #' @param rmax Total rows to append to data sets, reflecting total samples.
 #' @param cmax Total columns to append to data sets, reflecting total assays or probes.
@@ -212,51 +213,57 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 #' @param nr.inc Number of samples to append at a time (default: 10).
 #' @return Populates the HDF5 database
 #' @export
-h5_addtables = function(dbn, fnl, dsnl, rmax, cmax,
+h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
                     verbose = TRUE, nr.inc = 10){
   for(di in 1:length(dsnl)){
     fnread = fnl[di]; dsn = dsnl[di]
     rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax),
-                           maxdims = c(H5Sunlimited(), H5Sunlimited()),
+                           maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                            storage.mode = "double", level = 5, chunk = c(1, 5))
     rn = cn = c()
-    con <- file(fnread, "r")
-    cn = unlist(strsplit(readLines(con, n = 1), " "))
+    con <- file(paste(fnpath, fnread, sep = "/"), "r") # make new connection object
+    cn = unlist(strsplit(readLines(con, n = 1), " ")) # read first line (colnames)
     cn = cn[2:length(cn)] # filt first value
     cn = gsub("\n", "",gsub('\"', '', cn[1:cmax])) # grab the max indexed value
-    nri = seq(1, rmax, nr.inc)
+    nri = getblocks(rmax, nr.inc)
     tt <- Sys.time()
-    j = 1 # j tracks last line written to hdf5d
-    for(i in nri){
-      dati = unlist(strsplit(readLines(con, n = nr.inc), " "))
+    for(ni in nri){
+      i = ni[1]
+      # read new lines; note this is contextual/resumes at next new line each iter
+      dati = unlist(strsplit(readLines(con, n = length(ni)), " "))
       wdi = which(grepl(".*GSM.*", dati))
       dff = matrix(nrow = 0, ncol = cmax)
-      ngsm = gsub("\n", "", gsub('\"', '', gsub("\\..*", "", dati[wdi]))) # all read gsm ids
+      # get stripped GSM IDs from rownames (first col each line)
+      ngsm = gsub("\n", "",
+                  gsub('\"', '',
+                       gsub("\\..*", "", dati[wdi])))
       wgsm = c() # new gsm ids to write
       for(wi in 1:length(wdi)){
         # filter redundant gsm ids
         if(!ngsm[wi] %in% rn){
           wadd = wdi[wi] + 1
-          dff = rbind(dff, matrix(dati[wadd:(wadd + cmax - 1)], nrow = 1))
+          dff = rbind(dff,
+                      matrix(dati[wadd:(wadd + cmax - 1)],
+                             nrow = 1))
           wgsm = c(wgsm, ngsm[wi])
         }
       }
       rn = c(rn, wgsm) # gsm ids for new data
       class(dff) = "numeric"
       rhdf5::h5write(dff, file = dbn, name = dsn,
-                     index = list(j:(j + nrow(dff) - 1), 1:cmax))
+                     index = list(ni[1]:ni[length(ni)], 1:cmax))
       rhdf5::h5closeAll()
-      j = j + nrow(dff) # start index for next dff
-      message("For ds ", dsn,", finished reading index ", i, " to ", i + (nr.inc - 1),
+      message("For ds ", dsn,", finished reading index ", i,
+              " to ", ni[length(ni)],
               ", time; ", Sys.time() - tt)
     }
     message("Adding row and column names for ds ", dsn)
     cnn = paste0(dsn, ".colnames"); rnn = paste0(dsn, ".rownames");
-    rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(H5Sunlimited()),
+    rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(rhdf5::H5Sunlimited()),
                            storage.mode = "character", level = 5, # compression level, 1-9
                            chunk = c(20), size = 256) # chunk dims
     message("Added colnames...")
-    rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(H5Sunlimited()),
+    rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(rhdf5::H5Sunlimited()),
                            storage.mode = "character", level = 5, # compression level, 1-9
                            chunk = c(20), size = 256) # chunk dims
     message("Added rownames...")
@@ -265,12 +272,7 @@ h5_addtables = function(dbn, fnl, dsnl, rmax, cmax,
     rhdf5::h5closeAll()
     message("Completed writing data, rownames, colnames for ds, ", dsn)
   }
-  if(verbose){message("Finished adding red and green channel data to h5 databse.")}
-  if(newtables){
-    if(verbose){message("Adding new data tables.")}
-    h5_newtables(dbn)
-  }
-  if(verbose){message("Finished all processes. Returning.")}
+  if(verbose){message("Finished adding red and green channel data sets.")}
   return(NULL)
 }
 
@@ -297,12 +299,15 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
                          ncol.chunk = 5000){
   # Generate noobbeta and meth/unmeth signal tables
   # get dimensions from red and grn signal data
+  if(verbose){message("Getting red and green signal h5 object info...")}
   rs.rn <- rhdf5::h5read(dbn, paste0(dsn.red, ".rownames"))
   rs.cn <- rhdf5::h5read(dbn, paste0(dsn.red, ".colnames"))
   gs.rn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".rownames"))
   gs.cn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".colnames"))
-  sbv <- getblocks(length(rs.rn), ngsm.chunk)
+  if(verbose){message("Getting blocked indices of row data to process...")}
+  sbv <- getblocks(length(rs.rn), ngsm.block)
   # get new cg  dimensions
+  if(verbose){message("Getting manifest and setting new colname dim...")}
   anno.name = "IlluminaHumanMethylation450kanno.ilmn12.hg19"
   man = eval(parse(text = paste(anno.name, "Manifest", sep = "::")))
   ncg = nrow(man)
@@ -311,15 +316,16 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
   chunkvars <- c(5, ncol.chunk)
   # make new tables
   rhdf5::h5createDataset(dbn, "unmethylated_signal", dims = newdims,
-                         maxdims = c(H5Sunlimited(), H5Sunlimited()),
+                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                          storage.mode = "double", level = 5, chunk = chunkvars)
   rhdf5::h5createDataset(dbn, "methylated_signal", dims = newdims,
-                         maxdims = c(H5Sunlimited(), H5Sunlimited()),
+                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                          storage.mode = "double", level = 5, chunk = chunkvars)
   rhdf5::h5createDataset(dbn, "noobbeta", dims = newdims,
-                         maxdims = c(H5Sunlimited(), H5Sunlimited()),
+                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                          storage.mode = "double", level = 5, chunk = chunkvars)
   # append new data
+  if(verbose){message("Appending new data to h5 datasets...")}
   t1 <- Sys.time()
   for(i in 1:length(sbv)){
     b = sbv[[i]]
@@ -330,7 +336,7 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
                                        metadata = FALSE,
                                        verbose = FALSE)
     # new se and data objects
-    se.nb <- preprocessNoob(se.rgi)
+    se.nb <- minfi::preprocessNoob(se.rgi)
     methb <- t(minfi::getMeth(se.nb))
     unmethb <- t(minfi::getUnmeth(se.nb))
     nb <- t(minfi::getBeta(se.nb))
@@ -343,47 +349,63 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
     rhdf5::h5write(nb, file = dbn,
                    name = dsn.nb, index = writei)
     if(verbose){
-      message("iter: ", i," of ",
-              length(sbv),", time: ",
+      message("finished block ", i," of ",
+              length(sbv),", time elapsed: ",
               Sys.time() - t1)
     }
   }
   if(verbose){message("Completed addition of new tables!")}
-  return(TRUE)
+  return(NULL)
 }
 
 #' Make and populate a new HDF5 database
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
-#' @param dbn Name of the HDF5 database targeted.
+#' @param dbfnstem Stem of filename for h5 database (to which ts and version appended)
+#' @param version Version of new database file.
+#' @param ts Timestamp of new database file.
 #' @param fnl List of signal tables containing data to be added.
+#' @param fnpath Filepath to files in fnl.
 #' @param dsnl List of data set names in HDF5 database to be populated.
 #' @param rmax Total rows to append to data sets, reflecting total samples.
-#' @param cmax Total columns to append to data sets, reflecting total assays or probes.
+#' @param cmax Total columns to append to data sets, reflecting total assays or probes. Should be 622399 for raw red/grn signal.
 #' @param newtables Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).
 #' @return Populates the HDF5 database
 #' @export
-make_h5db <- function(dbn, fnl, rmax = 35500, cmax = 622399, rmoldh5 = TRUE,
-                      newtables = TRUE, dsnl = c("redsignal", "greensignal")){
-  try(rhdf5::h5createFile(dbn))
+make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
+                      rmax = 35300, cmax = 622399,
+                      rmoldh5 = TRUE, newtables = TRUE,
+                      dsnl = c("redsignal", "greensignal")){
+
+  # make new h5 db filename
+  dbn <- paste(paste(dbfnstem, ts,
+                     gsub("\\.", "-", version),
+                     sep = "_"), "h5",
+               sep = ".")
+  if(verbose){message("Making new h5 db file: ", dbn)}
+  suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
 
   # remove old data if present
   if(rmoldh5){
     if(verbose){message("Removing any existing old data.")}
     for(d in dsnl){
-      try(rhdf5::h5delete(dbn, d))
-      try(rhdf5::h5delete(dbn, paste0(d, ".colnames")))
-      try(rhdf5::h5delete(dbn, paste0(d, ".rownames")))
+      suppressMessages(try(rhdf5::h5delete(dbn, d), silent = TRUE))
+      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")), silent = TRUE))
+      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), silent = TRUE))
     }
   }
 
+  # add red and grn signal tables
   if(verbose){message("Adding and populating data tables to HDF5 database")}
-  h5_addtables(fnl = fnl, dsnl = dsnl, rmax = rmax, cmax = cmax, nr.inc = nr.inc)
-  if(verbose){message("Finished adding red and green channel data to h5 databse.")}
+  h5_addtables(dbn = dbn, fnl = fnl, dsnl = dsnl,
+               rmax = rmax, cmax = cmax, nr.inc = nr.inc,
+               fnpath = fnpath)
+  if(verbose){message("Finished adding red and green channel data.")}
 
+  # optionally add meth, unmeth, and noobbeta tables
   if(newtables){
-    if(verbose){message("Adding new data tables.")}
-    h5.newtables(dbn)
+    if(verbose){message("Adding new data sets from h5 signal tables...")}
+    h5_newtables(dbn)
   }
 
   if(verbose){message("Finished all processes. Returning.")}

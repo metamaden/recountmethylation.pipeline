@@ -137,19 +137,27 @@ dtables_fromsignal(version = "0.0.1", timestamp = "123",
 }
 
 # make an HDF5 databse from data tables
-make_h5db(dbn = "remethdb")
+make_h5db(dbfnstem = "remethdb", version = "0.0.1", ts = "1123",
+          fnl = list.files("compilations"), dsnl = c("greensignal", "redsignal"),
+          fnpath = "compilations", rmax = 2)
 
 {
 
-  dbn = "remethdb"
+  version = "0.0.1"
+  ts = "1123"
+  dbfnstem = "remethdb"
   fnl = list.files("compilations")
   rmoldh5 = TRUE
   rmax = 35500
   cmax = 622399
   newtables = TRUE
+  verbose = TRUE
   dsnl = c("redsignal", "greensignal", "noobbeta")
 
-
+  dbn <- paste(paste(dbfnstem, ts,
+                       gsub("\\.", "-", version),
+                       sep = "_"), "h5",
+                 sep = ".")
   try(rhdf5::h5createFile(dbn))
   # remove old data if present
   if(rmoldh5){
@@ -168,54 +176,61 @@ make_h5db(dbn = "remethdb")
     dbn = dbn
     fnl = fnl
     dsnl = dsnl
-    rmax = rmax
+    rmax = 2
     cmax = cmax
     verbose = TRUE
     nr.inc = 10
+    fnpath = "compilations"
 
     for(di in 1:length(dsnl)){
       fnread = fnl[di]; dsn = dsnl[di]
       rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax),
-                      maxdims = c(H5Sunlimited(), H5Sunlimited()),
+                      maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                       storage.mode = "double", level = 5, chunk = c(1, 5))
       rn = cn = c()
-      con <- file(fnread, "r")
-      cn = unlist(strsplit(readLines(con, n = 1), " "))
+      con <- file(paste(fnpath, fnread, sep = "/"), "r") # make new connection object
+      cn = unlist(strsplit(readLines(con, n = 1), " ")) # read first line (colnames)
       cn = cn[2:length(cn)] # filt first value
       cn = gsub("\n", "",gsub('\"', '', cn[1:cmax])) # grab the max indexed value
-      nri = seq(1, rmax, nr.inc)
+      nri = getblocks(rmax, nr.inc)
       tt <- Sys.time()
-      j = 1 # j tracks last line written to hdf5d
-      for(i in nri){
-        dati = unlist(strsplit(readLines(con, n = nr.inc), " "))
+      for(ni in nri){
+        i = ni[1]
+        # read new lines; note this is contextual/resumes at next new line each iter
+        dati = unlist(strsplit(readLines(con, n = length(ni)), " "))
         wdi = which(grepl(".*GSM.*", dati))
         dff = matrix(nrow = 0, ncol = cmax)
-        ngsm = gsub("\n", "", gsub('\"', '', gsub("\\..*", "", dati[wdi]))) # all read gsm ids
+        # get stripped GSM IDs from rownames (first col each line)
+        ngsm = gsub("\n", "",
+                    gsub('\"', '',
+                         gsub("\\..*", "", dati[wdi])))
         wgsm = c() # new gsm ids to write
         for(wi in 1:length(wdi)){
           # filter redundant gsm ids
           if(!ngsm[wi] %in% rn){
             wadd = wdi[wi] + 1
-            dff = rbind(dff, matrix(dati[wadd:(wadd + cmax - 1)], nrow = 1))
+            dff = rbind(dff,
+                        matrix(dati[wadd:(wadd + cmax - 1)],
+                               nrow = 1))
             wgsm = c(wgsm, ngsm[wi])
           }
         }
         rn = c(rn, wgsm) # gsm ids for new data
         class(dff) = "numeric"
         rhdf5::h5write(dff, file = dbn, name = dsn,
-                index = list(j:(j + nrow(dff) - 1), 1:cmax))
+                index = list(ni[1]:ni[length(ni)], 1:cmax))
         rhdf5::h5closeAll()
-        j = j + nrow(dff) # start index for next dff
-        message("For ds ", dsn,", finished reading index ", i, " to ", i + (nr.inc - 1),
+        message("For ds ", dsn,", finished reading index ", i,
+                " to ", i + (nr.inc - 1),
                 ", time; ", Sys.time() - tt)
       }
       message("Adding row and column names for ds ", dsn)
       cnn = paste0(dsn, ".colnames"); rnn = paste0(dsn, ".rownames");
-      rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(H5Sunlimited()),
+      rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(rhdf5::H5Sunlimited()),
                       storage.mode = "character", level = 5, # compression level, 1-9
                       chunk = c(20), size = 256) # chunk dims
       message("Added colnames...")
-      rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(H5Sunlimited()),
+      rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(rhdf5::H5Sunlimited()),
                       storage.mode = "character", level = 5, # compression level, 1-9
                       chunk = c(20), size = 256) # chunk dims
       message("Added rownames...")
@@ -232,6 +247,30 @@ make_h5db(dbn = "remethdb")
   if(newtables){
     if(verbose){message("Adding new data tables.")}
     h5_newtables(dbn)
+
+
+    {
+      h5_newtables <- function(dbn, dsn.nb = "noobbeta",
+                               dsn.meth = "methylated_signal",
+                               dsn.unmeth = "unmethylated_signal",
+                               dsn.red = "redsignal", dsn.grn = "greensignal",
+                               verbose = TRUE, ngsm.block = 50,
+                               ncol.chunk = 5000)
+
+      dbn = "remethdb_1123_0-0-1.h5"
+      dsn.nb = "noobbeta"
+      dsn.meth = "methylated_signal"
+      dsn.unmeth = "unmethylated_signal"
+      dsn.red = "redsignal"
+      dsn.grn = "greensignal"
+      verbose = TRUE
+      ngsm.block = 50
+      ncol.chunk = 5000
+
+
+    }
+
+
   }
 
   if(verbose){message("Finished all processes. Returning.")}
