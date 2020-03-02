@@ -46,11 +46,9 @@ get_metadata <- function(title, version, pname = "rmpipeline",
                          sname = "get_timestamp.py"){
   mdl <- list(title = title, version = version)
   # get timestamp from package python script
-  path <- paste(system.file(package = pname),
-                sname, sep="/")
-  command <- paste("python", path, sname,
-                   "to", sep = " ")
-  mdl[["timestamp"]] <- system(command, intern = T)
+  path <- paste(system.file(package = pname), sname, sep="/")
+  ts <- system(paste("python", path, sep = " "), intern = TRUE, wait = FALSE)
+  mdl[["timestamp"]] <- ts
   return(mdl)
 }
 
