@@ -5,10 +5,11 @@ pname <- "rmpipeline"
 sname <- "get_timestamp.py"
 path <- paste(system.file(package=pname), sname, sep="/")
 command <- paste("python", path, sname, "to", sep = " ")
-try(suppressWarnings(response <- system(command, intern=T)), silent = T)
+ts <- system(command, intern=T)
 
 # option 2
 library(reticulate)
-
+pname <- "rmpipeline"
+sname <- "get_timestamp.py"
 path <- paste(system.file(package=pname), sname, sep="/")
-py_run_file(path)
+reticulate::py_run_file(path)

@@ -2,12 +2,6 @@
 
 # Functions for the Recount Methylation Pipeline and `recountmethylation` R package.
 
-#----------
-# Utilities
-#----------
-
-# Generic utilities
-
 #' Get list of index blocks
 #'
 #' Get list of index blocks allowing for remainders.
@@ -31,15 +25,26 @@ getblocks <- function(slength, bsize){
   return(iv)
 }
 
-# Make the base h5 db from data tables
-
 #' Append metadata to HDF5 or SE object
 #' 
 #' Passes version info and timestamp from Python to object metadata
+#' @param title Object title
 #' @param version Numeric version to be passed, should conform to ##.##.## nomenclature
+#' @param pname Name of pipeline package (default: "rmpipeline")
+#' @param sname Name of Python script (default: "get_timestamp.y")
 #' @return Metadata content for the object
 #' @export 
-
+get_metadata <- function(title, version, pname = "rmpipeline", 
+                         sname = "get_timestamp.py"){
+  mdl <- list(title = title, version = version)
+  # get timestamp from package python script
+  path <- paste(system.file(package = pname), 
+                sname, sep="/")
+  command <- paste("python", path, sname, 
+                   "to", sep = " ")
+  mdl[["timestamp"]] <- system(command, intern = T)
+  return(mdl)
+}
 
 #' Make new minfi data tables from base h5 db
 #'
@@ -118,8 +123,6 @@ h5_newtables <- function(dbn = "remethdb2.h5", dsn.nb = "noobbeta",
   if(verbose){message("Completed addition of new tables!")}
   return(TRUE)
 }
-
-# H5 database to SEH5 dir objects with DelayedArray
 
 #' Use DelayedArray function to store H5 SummarizedExperiment directory
 #'
@@ -207,17 +210,23 @@ make.h5se <- function(newfn, dsn.data1, dsn.data2 = NULL,
     gri <- minfi::RGChannelSet(Red = ldat[[1]], 
                                Green = ldat[[2]], 
                                anno = anno)
+    metadata(gri) <- get_metadata(paste0("Recount Methylation ", class(gri)[1]),
+                                  version)
   } else if (se == "gr"){
     if(verbose){message("Making GenomicRatioSet...")}
     gri <- minfi::GenomicRatioSet(gr = grcg,
                                   Beta = ldat[[1]],
                                   anno = anno)
+    metadata(gri) <- get_metadata(paste0("Recount Methylation ", class(gri)[1]),
+                                  version)
   } else{
-    if(verbose){message("Making Making GenomicMethylSet...")}
+    if(verbose){message("Making GenomicMethylSet...")}
     gri <- minfi::GenomicMethylSet(gr = grcg,
                                    Meth = ldat[[1]], 
                                    Unmeth = ldat[[2]],
                                    anno = anno)
+    metadata(gri) <- get_metadata(paste0("Recount Methylation ", class(gri)[1]),
+                                  version)
   }
   # append pheno
   gri.pheno <- se.addpheno(mdp = mdpost, se = gri)
@@ -228,7 +237,7 @@ make.h5se <- function(newfn, dsn.data1, dsn.data2 = NULL,
                                           dir = "rmseh5_grnoob", 
                                           replace = replace.opt)
   if(verbose){
-    message("Save complete! Process finished at time ", 
+    message("Save complete. Process duration was ", 
             Sys.time() - t1)
   }
   return(TRUE)
