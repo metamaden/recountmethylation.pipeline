@@ -4,16 +4,19 @@
 \alias{se_addpheno}
 \title{Append phenotype data to a SummarizedExperiment object}
 \usage{
-se_addpheno(mdp, se)
+se_addpheno(phenopath, se, verbose = TRUE)
 }
 \arguments{
-\item{mdp}{Metadata object (columns are fields, rows are GSMs/samples).}
+\item{phenopath}{Path to properly formatted pheno data file (see details).}
 
 \item{se}{SummarizedExperiment object.}
+
+\item{verbose}{Whether to display status messages.}
 }
 \value{
 SummarizedExperiment object with appended phenotype data.
 }
 \description{
-Append phenotype data to a SummarizedExperiment object
+Append phenotype data to a SummarizedExperiment object.
+Note, this data should be a data.frame with certain data specified by colnames "basename" and "gsm".
 }

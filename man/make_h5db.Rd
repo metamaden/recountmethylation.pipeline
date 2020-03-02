@@ -5,26 +5,42 @@
 \title{Make and populate a new HDF5 database}
 \usage{
 make_h5db(
-  dbn,
+  dbfnstem,
+  version,
+  ts,
   fnl,
-  rmax = 35500,
+  fnpath,
+  rmax = 35300,
   cmax = 622399,
+  rmoldh5 = TRUE,
   newtables = TRUE,
-  dsnl = c("redsignal", "greensignal", "noobbeta")
+  addmd = TRUE,
+  mdpath = NULL,
+  dsnl = c("redsignal", "greensignal")
 )
 }
 \arguments{
-\item{dbn}{Name of the HDF5 database targeted.}
+\item{dbfnstem}{Stem of filename for h5 database (to which ts and version appended)}
 
-\item{fnl}{List of signal tables containing data to be added.}
+\item{version}{Version of new database file.}
+
+\item{ts}{Timestamp of new database file.}
+
+\item{fnl}{Vector of signal tables containing data to be added.}
+
+\item{fnpath}{Path to dir containing files in fnl.}
 
 \item{rmax}{Total rows to append to data sets, reflecting total samples.}
 
-\item{cmax}{Total columns to append to data sets, reflecting total assays or probes.}
+\item{cmax}{Total columns to append to data sets, reflecting total assays or probes. Should be 622399 for raw red/grn signal.}
 
 \item{newtables}{Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).}
 
-\item{dsnl}{List of data set names in HDF5 database to be populated.}
+\item{addmd}{Whether to add metadata to the h5db object.}
+
+\item{mdpath}{If addmd, the path to the metadata file to load.}
+
+\item{dsnl}{Vector of new h5 data set objects in the h5db object, corresponding (1:1) to the files declared in fnl.}
 }
 \value{
 Populates the HDF5 database

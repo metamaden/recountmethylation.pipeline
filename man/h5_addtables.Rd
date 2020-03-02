@@ -4,12 +4,14 @@
 \alias{h5_addtables}
 \title{Append metadata to HDF5 or SE object}
 \usage{
-h5_addtables(dbn, fnl, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
+h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
 }
 \arguments{
-\item{dbn}{Name of the HDF5 database targeted.}
+\item{dbn}{Name of H5 dataset, passed from make_h5db().}
 
-\item{fnl}{List of signal tables containing data to be added.}
+\item{fnl}{List of signal data table filenames, corresponding (1:1) to names for new h5 datasets in dsnl.}
+
+\item{fnpath}{Path to signal data tables.}
 
 \item{dsnl}{List of data set names in HDF5 database to be populated.}
 

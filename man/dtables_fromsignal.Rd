@@ -6,14 +6,15 @@
 \usage{
 dtables_fromsignal(
   version,
+  timestamp = NULL,
   verbose = TRUE,
   gsmint = 60,
   fnstem = "mdat.compilation",
   sepval = " ",
   getnb = FALSE,
-  idats.path = paste("recount-methylation-files", "idats", sep = "/"),
-  dest.path = paste("recount-methylation-analysis", "files", "mdata", "compilations",
-    sep = "/")
+  idatspath = paste("recount-methylation-files", "idats", sep = "/"),
+  destpath = paste("recount-methylation-analysis", "files", "mdata", "compilations", sep
+    = "/")
 )
 }
 \arguments{

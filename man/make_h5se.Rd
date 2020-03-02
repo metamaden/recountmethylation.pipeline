@@ -5,38 +5,49 @@
 \title{Use DelayedArray function to store H5 SummarizedExperiment directory}
 \usage{
 make_h5se(
-  newfn,
-  dsn.data1,
-  dsn.data2 = NULL,
-  mdpost,
-  dsn.rn = "redsignal.rownames",
+  newfnstem,
+  version,
+  ts,
   se = c("rg", "gr", "gm"),
-  verbose = TRUE,
-  dsn.cn = FALSE,
   dbn = "remethdb2.h5",
+  dsn.data1,
+  dsn.rn = "redsignal.rownames",
+  dsn.cn = "redsignal.colnames",
+  semd = list(title = "Recount Methylation H5-SE Object", version = version, timestamp =
+    ts),
+  dsn.data2 = NULL,
+  addpheno = FALSE,
+  phenopath = NULL,
+  verbose = TRUE,
   replace.opt = TRUE
 )
 }
 \arguments{
-\item{newfn}{Filename of new H5 SE directory.}
+\item{newfnstem}{Filename stem of H5-SE directory.}
 
-\item{dsn.data1}{Name of first dataset in h5 db (required).}
+\item{version}{Version of object, to be appended to fnstem.}
 
-\item{dsn.data2}{Name of second dataset in h5 db (required if se either rg or gm).}
+\item{ts}{Timestamp of object, to be appended to fnstem.}
 
-\item{mdpost}{Sample metadata file (columns are fields, rows are samples).}
-
-\item{dsn.rn}{Name of object in h5 db with the rownames (GSM or sample basenames).}
-
-\item{se}{Type of SummarizedExperiment to parse (either rg for RGChannelSet, gr for GenomicRatioSet, or gm for GenomicMethylSet).}
-
-\item{verbose}{Whether to show verbose status messages.}
-
-\item{dsn.cn}{Name of h5 db object with column names (cgids or assays, optional).}
+\item{se}{Type of SummarizedExperiment to parse (either `rg` for RGChannelSet, `gr` for GenomicRatioSet, or `gm` for GenomicMethylSet).}
 
 \item{dbn}{Name or path to h5 db.}
 
-\item{replace.opt}{Whether to replace/overwrite any existing H5 SE directories of the same name as `newfn`.}
+\item{dsn.data1}{Name of first dataset in h5 db (required).}
+
+\item{dsn.rn}{Name of object in h5 db with the rownames (GSM or sample basenames).}
+
+\item{dsn.cn}{Optional name of h5db object containing the column names (cg ids/addresses, default: NULL).}
+
+\item{semd}{Metadata for new H5-SE object. Should be a list including timestamp, version, description, etc.}
+
+\item{dsn.data2}{Name of second dataset in h5 db (required if se either rg or gm).}
+
+\item{phenopath}{Sample metadata file (columns are fields, rows are samples).}
+
+\item{verbose}{Whether to show verbose status messages.}
+
+\item{replace.opt}{Whether to replace/overwrite any existing H5SE directories of the same name as `newfn`.}
 }
 \value{
 List of index blocks of min length `slength`/`bsize`
