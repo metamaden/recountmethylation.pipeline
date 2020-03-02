@@ -333,7 +333,7 @@ h5.newtables <- function(dbn, dsn.nb = "noobbeta",
 #' @param newtables Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).
 #' @return Populates the HDF5 database
 #' @export 
-make.h5db <- function(dbn, fnl, rmax = 35500; cmax = 622399, newtables = TRUE,
+make.h5db <- function(dbn, fnl, rmax = 35500, cmax = 622399, newtables = TRUE,
                  dsnl = c("redsignal", "greensignal", "noobbeta")){
   try(rhdf5::h5createFile(dbn))
   # remove old data if present
