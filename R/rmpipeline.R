@@ -68,17 +68,22 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' @return Creates new HDF5 database from DNAm signal data.
 #' @export
 
-dtables_fromsignal <- function(version, verbose = TRUE, gsmint = 60,
+dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint = 60,
                             fnstem = "mdat.compilation", sepval = " ", getnb = FALSE,
                             idats.path = paste("recount-methylation-files", "idats", sep = "/"),
                             dest.path = paste("recount-methylation-analysis",
                                               "files", "mdata", "compilations", sep = "/")){
 
   # get run metadata
-  runmd <- get.metadata(version, "notitle")
-  nts = runmd[["timestamp"]]
+  if(!timestamp){
+    runmd <- get_metadata(version, "notitle")
+    nts = runmd[["timestamp"]]
+  } else{
+     nts <- timestamp
+  }
 
   # get valid gsms idats dir
+  if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
   idats.lf = list.files(idats.path)
   which.valid1 = grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4, nchar(idats.lf)))
   which.valid2 = grepl(".*hlink.*", idats.lf)
@@ -89,31 +94,34 @@ dtables_fromsignal <- function(version, verbose = TRUE, gsmint = 60,
 
   # determine target idats
   # note: add max timestamps filter
+  if(verbose){message("Determining valid IDAT file targets from GSM ID list...")}
   gpath = c()
   for(i in 1:length(gsmu)){
     cont.cond  <- FALSE
     g = gsmu[i]
     gfilt = grepl(paste0(".*", g, ".*"), idats.valid)
     ig = idats.valid[gfilt]
+    # order files by their timestamp, newest to oldest
+    ig <- ig[order(gsub("\\..*", "", gsub(".*\\.", "", ig)))]
     igv.red = ig[grepl(".*_Red.*", ig)][1]
     # check for matched green channel file
+    ig.red <- igv.red[1]
     while(length(ig.red) > 0 & !cont.cond){
-      ig.red <- igv.red[1]
       fchan.filt = grepl(gsub("_Red.*", "", ig.red), ig) & grepl(".*_Grn.*", ig)
       ig.grn = ig[fchan.filt][1]
       cont.cond = length(ig.red) == 1 & length(ig.grn) == 1
       igv.red[!igv.red == ig.red]
+      ig.red <- igv.red[1]
     }
     if(cont.cond){
       gpath = c(gpath, gsub("_Red.*", "", ig.red))
     }
-    if(verbose){message(
-      "Finished validating idat fn's for sample ", i)
-    }
+    if(verbose){message("Finished validating idat fn's for sample ", i)}
   }
   gsmii = seq(1, length(gsmu), gsmint)
 
   # make new data paths
+  if(verbose){message("Making and instantiating new data table files...")}
   reds.fn <- paste(paste("redsignal", nts, version, sep = "_"),
                    fnstem, sep = ".")
   grns.fn <- paste(paste("greensignal", nts, version, sep = "_"),
