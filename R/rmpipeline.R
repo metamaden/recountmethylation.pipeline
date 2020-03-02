@@ -33,7 +33,13 @@ getblocks <- function(slength, bsize){
 
 # Make the base h5 db from data tables
 
-# New h5 tables from h5 db red and green signal data
+#' Append metadata to HDF5 or SE object
+#' 
+#' Passes version info and timestamp from Python to object metadata
+#' @param version Numeric version to be passed, should conform to ##.##.## nomenclature
+#' @return Metadata content for the object
+#' @export 
+
 
 #' Make new minfi data tables from base h5 db
 #'
