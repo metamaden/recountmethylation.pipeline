@@ -138,7 +138,8 @@ dtables_fromsignal(version = "0.0.1", timestamp = "123",
 
 # make an HDF5 databse from data tables
 make_h5db(dbfnstem = "remethdb", version = "0.0.1", ts = "1123",
-          fnl = list.files("compilations"), dsnl = c("greensignal", "redsignal"),
+          fnl = list.files("compilations"),
+          dsnl = c("greensignal", "redsignal"),
           fnpath = "compilations", rmax = 2)
 
 {
@@ -268,6 +269,67 @@ make_h5db(dbfnstem = "remethdb", version = "0.0.1", ts = "1123",
       ncol.chunk = 5000
 
 
+      # Generate noobbeta and meth/unmeth signal tables
+      # get dimensions from red and grn signal data
+      if(verbose){message("Getting red and green signal h5 object info...")}
+      rs.rn <- rhdf5::h5read(dbn, paste0(dsn.red, ".rownames"))
+      rs.cn <- rhdf5::h5read(dbn, paste0(dsn.red, ".colnames"))
+      gs.rn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".rownames"))
+      gs.cn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".colnames"))
+      if(verbose){message("Getting blocked indices of row data to process...")}
+      sbv <- getblocks(length(rs.rn), ngsm.block)
+      # get new cg  dimensions
+      if(verbose){message("Getting manifest and setting new colname dim...")}
+      anno.name = "IlluminaHumanMethylation450kanno.ilmn12.hg19"
+      man = eval(parse(text = paste(anno.name, "Manifest", sep = "::")))
+      ncg = nrow(man)
+      # new h5 data params
+      newdims <- c(length(rs.rn), ncg)
+      chunkvars <- c(5, ncol.chunk)
+      # make new tables
+      rhdf5::h5createDataset(dbn, "unmethylated_signal", dims = newdims,
+                             maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
+                             storage.mode = "double", level = 5, chunk = chunkvars)
+      rhdf5::h5createDataset(dbn, "methylated_signal", dims = newdims,
+                             maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
+                             storage.mode = "double", level = 5, chunk = chunkvars)
+      rhdf5::h5createDataset(dbn, "noobbeta", dims = newdims,
+                             maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
+                             storage.mode = "double", level = 5, chunk = chunkvars)
+
+
+      # append new data
+      if(verbose){message("Appending new data to h5 datasets...")}
+      t1 <- Sys.time()
+      for(i in 1:length(sbv)){
+        b = sbv[[i]]
+        gsmvi <- gsub("\\..*", "", rs.rn[b])
+        se.rgi = recountmethylation::getrg(gsmv = gsmvi,
+                                           cgv = "all", dbn = dbn,
+                                           data.type = "se",
+                                           metadata = FALSE,
+                                           verbose = FALSE)
+        # new se and data objects
+        se.nb <- minfi::preprocessNoob(se.rgi)
+        methb <- t(minfi::getMeth(se.nb))
+        unmethb <- t(minfi::getUnmeth(se.nb))
+        nb <- t(minfi::getBeta(se.nb))
+        # append new data to h5 data
+        writei <- list(b[1]:b[length(b)], 1:ncg)
+        rhdf5::h5write(unmethb, file = dbn,
+                       name = dsn.unmeth, index = writei)
+        rhdf5::h5write(methb, file = dbn,
+                       name = dsn.meth, index = writei)
+        rhdf5::h5write(nb, file = dbn,
+                       name = dsn.nb, index = writei)
+        if(verbose){
+          message("finished block ", i," of ",
+                  length(sbv),", time elapsed: ",
+                  Sys.time() - t1)
+        }
+      }
+
+
     }
 
 
@@ -278,3 +340,10 @@ make_h5db(dbfnstem = "remethdb", version = "0.0.1", ts = "1123",
 
 # make HDF5-SummarizedExperiment objects
 rmpipeline::make.h5se()
+
+
+make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
+          dbn = "remethdb_1123_0-0-1.h5",
+          dsn.data1 = "redsignal", dsn.data2 = "greensignal",
+          dsn.rn = "redsignal.rownames",
+          dsn.cn = "redsignal.colnames")

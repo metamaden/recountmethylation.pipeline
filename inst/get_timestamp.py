@@ -26,3 +26,4 @@ def gettime_ntp(addr='time.nist.gov'):
 
 if __name__ == "__main__":
     print(gettime_ntp())
+    quit()
