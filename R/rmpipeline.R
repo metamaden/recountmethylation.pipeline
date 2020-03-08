@@ -235,6 +235,7 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
   rhdf5::h5write(mmf.colnames, file = dbn, name = cnn,
           index = list(1:length(mmf.colnames)))
   if(verbose){message("Finished adding metadata to HDF5 db.")}
+  rhdf5::h5closeAll() # close open connections to db
   return(NULL)
 }
 
@@ -311,6 +312,7 @@ h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
     message("Completed writing data, rownames, colnames for ds, ", dsn)
   }
   if(verbose){message("Finished adding red and green channel data sets.")}
+  rhdf5::h5closeAll() # close open connections to db
   return(NULL)
 }
 
@@ -393,6 +395,7 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
     }
   }
   if(verbose){message("Completed addition of new tables!")}
+  rhdf5::h5closeAll() # close open connections to db
   return(NULL)
 }
 
