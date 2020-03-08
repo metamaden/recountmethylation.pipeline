@@ -47,7 +47,8 @@ get_metadata <- function(title, version, pname = "rmpipeline",
   mdl <- list(title = title, version = version)
   # get timestamp from package python script
   path <- paste(system.file(package = pname), sname, sep="/")
-  ts <- system(paste("python", path, sep = " "), intern = TRUE, wait = FALSE)
+  ts <- system(paste("python", path, sep = " "),
+               intern = TRUE, wait = FALSE)
   mdl[["timestamp"]] <- ts
   return(mdl)
 }
@@ -198,7 +199,46 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 # Make and populate the HDF5 database
 #------------------------------------
 
-#' Append metadata to HDF5 or SE object
+#' Append sample metadata to HDF5 or SE object
+#'
+#' Add sample metadata table to the HDF5 database.
+#' @param dbn Name of H5 dataset, passed from make_h5db().
+#' @param mdpath Path to metadata file.
+#' @param dsn Name of new entity in HDF5 database.
+#' @param verbose Whether to return verbose status updates.
+#' @return Adds metadata table and colnames object to HDF5 database
+#' @export
+h5_addmd = function(dbn, mdpath, dsn = "mdpost"){
+  # name of new colnames entity
+  cnn = paste(dsn, "colnames", sep = ".")
+  # read in data
+  if(verbose){message("Reading in sample metadata from file: ", mdpath)}
+  mdt <- get(load(mdpath))
+  # format data
+  if(verbose){message("Formatting sample metadata...")}
+  mmf = as.matrix(mdt)
+  class(mmf) = "character"
+  mmf.colnames = colnames(mmf)
+  # instantiate new entities in db
+  if(verbose){message("Making new entities for HDF5 db...")}
+  rhdf5::h5createDataset(dbn, dsn, dims = c(nrow(mmf), ncol(mmf)),
+                  maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
+                  storage.mode = "character",
+                  level = 5, chunk = c(10, 16), size = 256)
+  rhdf5::h5createDataset(dbn, cnn, dims = length(mmf.colnames),
+                  maxdims = c(H5Sunlimited()), storage.mode = "character",
+                  level = 5, chunk = c(5), size = 256)
+  # write new data
+  if(verbose){message("Populating new HDF5 entities...")}
+  rhdf5::h5write(mmf, file = dbn, name = dsn,
+          index = list(1:nrow(mmf), 1:ncol(mmf)))
+  rhdf5::h5write(mmf.colnames, file = dbn, name = cnn,
+          index = list(1:length(mmf.colnames)))
+  if(verbose){message("Finished adding metadata to HDF5 db.")}
+  return(NULL)
+}
+
+#' Append data tables to HDF5 or SE object
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
 #' @param dbn Name of H5 dataset, passed from make_h5db().
@@ -370,6 +410,9 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
 #' @param newtables Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).
 #' @param addmd Whether to add metadata to the h5db object.
 #' @param mdpath If addmd, the path to the metadata file to load.
+#' @param nr.inc Number of samples to append at a time (default: 10, passed to `h5_addtables()`).
+#' @param ngsm.block Number of GSMs (samples) per process block (default 50, passed to `h5_newtables()`).
+#' @param verbose Whether to show verbose status updates.
 #' @param dsnl Vector of new h5 data set objects in the h5db object, corresponding (1:1) to the files declared in fnl.
 #' @return Populates the HDF5 database
 #' @export
@@ -377,6 +420,7 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
                       rmax = 35300, cmax = 622399,
                       rmoldh5 = TRUE, newtables = TRUE,
                       addmd = TRUE, mdpath = NULL,
+                      nr.inc = 10, ngsm.block = 50, verbose = TRUE,
                       dsnl = c("redsignal", "greensignal")){
 
   # make new h5 db filename
@@ -386,16 +430,6 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
                sep = ".")
   if(verbose){message("Making new h5 db file: ", dbn)}
   suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
-
-  # optionally add metadata
-  # note: FINISH THIS PART!
-  if(addmd & !is.null(mdpath)){
-    if(verbose){message("Adding metadata...")}
-    md <- get(load(mdpath))
-
-  } else{
-    if(verbose){message("Option addmd TRUE but no metadata path specified! Continuing..")}
-  }
 
   # remove old data if present
   if(rmoldh5){
@@ -410,14 +444,25 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
   # add red and grn signal tables
   if(verbose){message("Adding and populating data tables to HDF5 database")}
   h5_addtables(dbn = dbn, fnl = fnl, dsnl = dsnl,
-               rmax = rmax, cmax = cmax, nr.inc = nr.inc,
-               fnpath = fnpath)
+               rmax = rmax, cmax = cmax, nr.inc = ngsm.block,
+               fnpath = fnpath, verbose = verbose)
   if(verbose){message("Finished adding red and green channel data.")}
 
   # optionally add meth, unmeth, and noobbeta tables
   if(newtables){
     if(verbose){message("Adding new data sets from h5 signal tables...")}
-    h5_newtables(dbn)
+    h5_newtables(dbn, verbose = verbose)
+  }
+
+  # optionally add sample metadata
+  # note: FINISH THIS PART!
+  if(addmd & !is.null(mdpath)){
+    if(verbose){message("Adding sample metadata to db...")}
+    h5_addmd(dbn, mdpath, verbose = verbose)
+  } else{
+    if(verbose){message("Failed adding metadata.",
+                        "Option addmd is TRUE, but no mdpath specified!",
+                        "Continuing..")}
   }
 
   # finally, close open connections
@@ -586,6 +631,10 @@ make_h5se <- function(newfnstem, version, ts,
   # append pheno data
   if(addpheno){
     if(is.null(phenopath)){
+      message("No phenopath provided, checking HDF5 db for sample metadata...")
+
+
+
       message("Couldn't add pheno data! Specify phenopath. Continuing...")
     } else{
       if(verbose){message("Adding pheno data...")}

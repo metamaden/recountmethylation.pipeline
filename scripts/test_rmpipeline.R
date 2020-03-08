@@ -11,7 +11,7 @@ vers <- "00.00.01"
 rmd <- get_metadata("newrun", vers)
 ts <- rmd[["timestamp"]]
 
-dtables_fromsignal(version = "0.0.1", timestamp = "123",
+dtables_fromsignal(version = "0.0.1", timestamp = ts,
                    idatspath = "idats", destpath = "compilations")
 
 {
@@ -137,9 +137,11 @@ dtables_fromsignal(version = "0.0.1", timestamp = "123",
 }
 
 # make an HDF5 databse from data tables
-make_h5db(dbfnstem = "remethdb", version = "0.0.1", ts = "1123",
+make_h5db(dbfnstem = "remethdb",
+          version = "0.0.1", ts = ts,
           fnl = list.files("compilations"),
           dsnl = c("greensignal", "redsignal"),
+          addmd = TRUE, mdpath = "mdpost_all-gsm-md.rda",
           fnpath = "compilations", rmax = 2)
 
 {
