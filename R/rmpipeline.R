@@ -226,7 +226,7 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
                   storage.mode = "character",
                   level = 5, chunk = c(10, 16), size = 256)
   rhdf5::h5createDataset(dbn, cnn, dims = length(mmf.colnames),
-                  maxdims = c(H5Sunlimited()), storage.mode = "character",
+                  maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character",
                   level = 5, chunk = c(5), size = 256)
   # write new data
   if(verbose){message("Populating new HDF5 entities...")}
@@ -421,7 +421,9 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
                       rmoldh5 = TRUE, newtables = TRUE,
                       addmd = TRUE, mdpath = NULL,
                       nr.inc = 10, ngsm.block = 50, verbose = TRUE,
-                      dsnl = c("redsignal", "greensignal")){
+                      dsnl = c("redsignal", "greensignal", "mdpost",
+                               "unmethylated_signal", "methylated_signal",
+                               "noobbeta")){
 
   # make new h5 db filename
   dbn <- paste(paste(dbfnstem, ts,
@@ -431,9 +433,9 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
   if(verbose){message("Making new h5 db file: ", dbn)}
   suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
 
-  # remove old data if present
+  # remove old data, if present
   if(rmoldh5){
-    if(verbose){message("Removing any existing old data.")}
+    if(verbose){message("Removing old data...")}
     for(d in dsnl){
       suppressMessages(try(rhdf5::h5delete(dbn, d), silent = TRUE))
       suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")), silent = TRUE))
@@ -443,7 +445,7 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
 
   # add red and grn signal tables
   if(verbose){message("Adding and populating data tables to HDF5 database")}
-  h5_addtables(dbn = dbn, fnl = fnl, dsnl = dsnl,
+  h5_addtables(dbn = dbn, fnl = fnl, dsnl = c("redsignal", "greensignal"),
                rmax = rmax, cmax = cmax, nr.inc = ngsm.block,
                fnpath = fnpath, verbose = verbose)
   if(verbose){message("Finished adding red and green channel data.")}

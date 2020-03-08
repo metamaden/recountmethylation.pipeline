@@ -140,7 +140,6 @@ dtables_fromsignal(version = "0.0.1", timestamp = ts,
 make_h5db(dbfnstem = "remethdb",
           version = "0.0.1", ts = ts,
           fnl = list.files("compilations"),
-          dsnl = c("greensignal", "redsignal"),
           addmd = TRUE, mdpath = "mdpost_all-gsm-md.rda",
           fnpath = "compilations", rmax = 2)
 
