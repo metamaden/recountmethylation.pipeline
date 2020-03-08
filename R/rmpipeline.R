@@ -208,7 +208,7 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
 #' @param verbose Whether to return verbose status updates.
 #' @return Adds metadata table and colnames object to HDF5 database
 #' @export
-h5_addmd = function(dbn, mdpath, dsn = "mdpost"){
+h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
   # name of new colnames entity
   cnn = paste(dsn, "colnames", sep = ".")
   # read in data
