@@ -28,5 +28,17 @@ make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
           dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
           dsn.cn = "redsignal.colnames")
 
+#---------
+
+library(rmpipeline)
+
+vers <- "0.0.1"
+rmd <- get_metadata("newrun", vers)
+ts <- rmd[["timestamp"]]
+
+dtables_fromsignal(version = "0.0.1", timestamp = ts,
+                   idatspath = "recount-methylation-files/idats",
+                   destpath = "recount-methylation-analysis/files/mdata/compilations")
 
 
+dtables_fromsignal2(version = "0.0.1", timestamp = ts)
