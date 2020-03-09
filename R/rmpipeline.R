@@ -481,19 +481,38 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
 # Make the SE-H5 objects
 #-----------------------
 
+#' Retrieve samples metadata from HDF5 db.
+#'
+#' Retrieves sample metadata from an HDF5 database.
+#'
+#' @param dbn Path to HDF5 database file.
+#' @param dsn Name or group path to HDF5 dataset containing postprocessed metadata.
+#' @return Postprocessed metadata as a `data.frame`.
+#' @export
+data_mdpost = function(dbn, dsn){
+  mdp = as.data.frame(rhdf5::h5read(file = dbn, name = dsn), stringsAsFactors = F)
+  colnames(mdp) = rhdf5::h5read(file = dbn, name = paste(dsn, "colnames", sep = "."))
+  return(mdp)
+}
+
 #' Append phenotype data to a SummarizedExperiment object
 #'
 #' Append phenotype data to a SummarizedExperiment object.
 #' Note, this data should be a data.frame with certain data specified by colnames "basename" and "gsm".
 #'
 #' @param phenopath Path to properly formatted pheno data file (see details).
+#' @param pdat Object containing sample metadata/phenodata (rows = samples, NULL by default).
 #' @param se SummarizedExperiment object.
 #' @param verbose Whether to display status messages.
 #' @return SummarizedExperiment object with appended phenotype data.
 #' @export
-se_addpheno <- function(phenopath, se, verbose = TRUE){
-  if(verbose){message("Loading pheno data from path...")}
-  mdp <- get(load(phenopath))
+se_addpheno <- function(phenopath, pdat = NULL, se, verbose = TRUE){
+  if(is.null(pdat)){
+    if(verbose){message("Loading pheno data from path...")}
+    mdp <- get(load(phenopath))
+  } else{
+    mdp <- pdat
+  }
   # Adds pheno data to a SummarizedExperiment objects
   mdp <- mdp[mdp$basename %in% colnames(se),]
   bnv <- colnames(se)
@@ -540,32 +559,24 @@ se_addpheno <- function(phenopath, se, verbose = TRUE){
 #' @param replace.opt Whether to replace/overwrite any existing H5SE directories of the same name as `newfn`.
 #' @return List of index blocks of min length `slength`/`bsize`
 #' @export
-make_h5se <- function(newfnstem, version, ts,
-                      se = c("rg", "gr", "gm"),
-                      dbn = "remethdb2.h5", dsn.data1,
-                      dsn.rn = "redsignal.rownames",
+make_h5se <- function(dbn, newfnstem, version, ts,
+                      dsn.data1, dsn.md = "mdpost", mdpath = NULL,
+                      se = c("rg", "gr", "gm"), dsn.rn = "redsignal.rownames",
                       dsn.cn = "redsignal.colnames",
                       semd = list("title" = "Recount Methylation H5-SE Object",
                                   "version" = version,
                                   "timestamp" = ts),
-                      dsn.data2 = NULL,
-                      addpheno = FALSE, phenopath = NULL,
-                      verbose = TRUE,
-                      replace.opt = TRUE){
-  # Sets up SummarizedExperiment creation from h5 file
-  # Stores SE object to SE H5 file with DelayedArray processing
-
+                      dsn.data2 = NULL, addpheno = FALSE, phenopath = NULL,
+                      verbose = TRUE, replace.opt = TRUE){
+  # Creates an SE-H5 object from an HDF5 db
   # make the new filename
   newfn <- paste(newfnstem, gsub("\\.", "-", version), ts, sep = "_")
-
   # check the specified se
   if(length(se) > 1){stop("Specify a single se set to process per run.")}
-
   # anno for se sets
   if(verbose){message("Setting annotation info...")}
   anno = c("IlluminaHumanMethylation450k", "ilmn12.hg19")
   names(anno) = c("array", "annotation")
-
   # get granges object
   if("gr" %in% se | "gm" %in% se){
     if(verbose){message("Getting the GRanges object...")}
@@ -598,9 +609,8 @@ make_h5se <- function(newfnstem, version, ts,
     stop("Must provide dsn.data2 for se as rg or gm!")
   }
   # get probe ids or addresses
-  # note: FIX THIS SECTION, shouldn't apply to RGChannel set objects
   if(verbose){message("Getting probe ids/addresses...")}
-  if("gr" %in% se | "gm" %in% se){
+  if(se %in% c("gm", "gr")){
     man.package <- "IlluminaHumanMethylation450kanno.ilmn12.hg19"
     man <- get(data(Manifest, package = man.package))
     cgrn <- rownames(man)
@@ -609,7 +619,6 @@ make_h5se <- function(newfnstem, version, ts,
       return(x)
     })
   }
-
   # make the new H5-SE set(s)
   if(verbose){message("Making the new se object...")}
   if("rg" %in% se){
@@ -632,21 +641,27 @@ make_h5se <- function(newfnstem, version, ts,
                                    anno = anno)
     metadata(gri) <- semd
   }
-
   # append pheno data
   if(addpheno){
     if(is.null(phenopath)){
-      message("No phenopath provided, checking HDF5 db for sample metadata...")
-
-
-
-      message("Couldn't add pheno data! Specify phenopath. Continuing...")
+      message("No phenopath provided, checking ",
+              "HDF5 db for sample metadata...")
+      if(dsn.md %in% h5ls(dbn) &
+         paste0(dsn.md, ".colnames") %in% h5ls(dbn)){
+        if(verbose){message("Sample metadata detected in dbn. ",
+                            "Adding sample metadata as pheno data...")}
+        mdp <- data_mdpost(dbn, dsn.md)
+        gri <- se_addpheno(pdat = mdp, se = gri)
+      }
+      message("Couldn't add pheno data!",
+              " Specify phenopath or ensure",
+              " the dsn.md entity exists in dbn.",
+              " Continuing...")
     } else{
-      if(verbose){message("Adding pheno data...")}
-      gri <- se_addpheno(mdp = get(load("mdpost_all-gsm-md.rda")), se = gri)
+      if(verbose){message("Adding sample metadata from phenopath...")}
+      gri <- se_addpheno(phenopath, se = gri)
     }
   }
-
   # start the run and save the new H5-SE set
   t1 <- Sys.time()
   if(verbose){message("Starting process to make new file ", newfn, "...")}
