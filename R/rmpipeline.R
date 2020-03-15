@@ -602,6 +602,7 @@ make_h5se <- function(dbn, newfnstem, version, ts,
   nb <- HDF5Array::HDF5Array(dbn, dsn.data1)
   rn <- rhdf5::h5read(dbn, dsn.rn)
   cn <- rhdf5::h5read(dbn, dsn.cn)
+  nb <- nb[1:length(rn), 1:length(cn)] # trim data
   rownames(nb) <- as.character(rn)
   nb <- t(nb)
   ldat[[dsn.data1]] <- nb
@@ -609,6 +610,7 @@ make_h5se <- function(dbn, newfnstem, version, ts,
   if(!is.null(dsn.data2)){
     if(verbose){message("Getting dsn.data2...")}
     nb <- HDF5Array::HDF5Array(dbn, dsn.data2)
+    nb <- nb[1:length(rn), 1:length(cn)] # trim data
     rownames(nb) <- as.character(rn)
     nb <- t(nb)
     rownames(nb) <- as.character(cn)
