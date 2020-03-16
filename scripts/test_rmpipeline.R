@@ -23,6 +23,19 @@ make_h5db(dbfnstem = "remethdb",
           fnpath = "compilations", rmax = 2)
 
 # make HDF5-SummarizedExperiment objects
+
+vers <- "00.00.01"
+ts <- "1583780004" # "123"
+dbn <- "remethdb2.h5"
+newfnstem <- "remethdb_h5se_rg" # "h5se_gr"
+se <- "rg" # "gr"
+# dsn.data1 <- "noobbeta"
+dsn.data1 <- "redsignal"
+dsn.data2 <- "grnsignal"
+dsn.rn <- "redsignal.rownames"
+dsn.cn <- "redsignal.colnames"
+
+
 dbn <- "remethdb2.h5"
 # make rg h5se
 make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_rg", version = vers,
