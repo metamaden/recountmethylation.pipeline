@@ -10,6 +10,7 @@ require(rmpipeline)
 vers <- "00.00.01"
 rmd <- get_metadata("newrun", vers)
 ts <- rmd[["timestamp"]] # 1583780004
+semd <- list(version = vers, timestamp = ts)
 
 dtables_fromsignal(version = "0.0.1", timestamp = ts,
                    idatspath = "idats", destpath = "compilations")
@@ -29,11 +30,19 @@ make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_rg", version = vers,
           addpheno = TRUE, dsn.md = "mdpost", dsn.rn = "redsignal.rownames",
           dsn.cn = "redsignal.colnames")
 
-# make nb h5se
+# make gr h5se
 make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gr", version = vers,
           ts = ts, se = "gr", dsn.data1 = "noobbeta", addpheno = TRUE,
           phenopath = "mdpost_all-gsm-md.rda",
           dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
+
+# make gm h5se
+make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gm",
+          version = vers, ts = ts, se = "gr",
+          dsn.data1 = "methylated_signal", dsn.data2 = "unmethylated_signal",
+          addpheno = TRUE, phenopath = "mdpost_all-gsm-md.rda",
+          dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
+
 
 #---------
 

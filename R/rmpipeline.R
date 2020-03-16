@@ -603,9 +603,9 @@ make_h5se <- function(dbn, newfnstem, version, ts, make.from.rg = FALSE,
   nb <- HDF5Array::HDF5Array(dbn, dsn.data1)
   rn <- rhdf5::h5read(dbn, dsn.rn)
   cn <- rhdf5::h5read(dbn, dsn.cn)
+  nb <- nb[1:length(rn), 1:length(cn)] # trim data
   rn <- rn[1:nrow(nb)] # subset rows
   cn <- cn[1:ncol(nb)] # subset cols
-  nb <- nb[1:length(rn), 1:length(cn)] # trim data
   rownames(nb) <- as.character(rn)
   colnames(nb) <- as.character(cn)
   nb <- t(nb) # transpose so cols are samples, rows are assays
@@ -649,7 +649,7 @@ make_h5se <- function(dbn, newfnstem, version, ts, make.from.rg = FALSE,
     gri <- minfi::RGChannelSet(Red = ldat[[1]],
                                Green = ldat[[2]],
                                anno = anno)
-    metadata(gri) <- semd
+    S4Vectors::metadata(gri) <- semd
   } else if ("gr" %in% se){
     if(verbose){message("Making GenomicRatioSet...")}
     gri <- minfi::GenomicRatioSet(gr = grcg,
