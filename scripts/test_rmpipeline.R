@@ -27,7 +27,8 @@ dbn <- "remethdb2.h5"
 # make rg h5se
 make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_rg", version = vers,
           ts = ts, se = "rg", dsn.data1 = "redsignal", dsn.data2 = "greensignal",
-          addpheno = TRUE, dsn.md = "mdpost", dsn.rn = "redsignal.rownames",
+          addpheno = TRUE, phenopath = "mdpost_all-gsm-md.rda",
+          dsn.md = "mdpost", dsn.rn = "redsignal.rownames",
           dsn.cn = "redsignal.colnames")
 
 # make gr h5se

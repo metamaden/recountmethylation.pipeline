@@ -548,7 +548,7 @@ se_addpheno <- function(phenopath, pdat = NULL, se, verbose = TRUE){
   rownames(mdp) <- colnames(se)
   identical(rownames(mdp), colnames(se))
   # append pheno to se object
-  minfi::pData(se) <- DataFrame(mdp)
+  minfi::pData(se) <- S4Vectors::DataFrame(mdp)
   return(se)
 }
 
