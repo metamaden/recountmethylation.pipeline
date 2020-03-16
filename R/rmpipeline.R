@@ -669,8 +669,8 @@ make_h5se <- function(dbn, newfnstem, version, ts, make.from.rg = FALSE,
     if(is.null(phenopath)){
       message("No phenopath provided, checking ",
               "HDF5 db for sample metadata...")
-      if(dsn.md %in% h5ls(dbn) &
-         paste0(dsn.md, ".colnames") %in% h5ls(dbn)){
+      if(dsn.md %in% rhdf5::h5ls(dbn) &
+         paste0(dsn.md, ".colnames") %in% rhdf5::h5ls(dbn)){
         if(verbose){message("Sample metadata detected in dbn. ",
                             "Adding sample metadata as pheno data...")}
         mdp <- data_mdpost(dbn, dsn.md)
