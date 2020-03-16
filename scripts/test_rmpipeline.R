@@ -22,11 +22,17 @@ make_h5db(dbfnstem = "remethdb",
           fnpath = "compilations", rmax = 2)
 
 # make HDF5-SummarizedExperiment objects
-make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
-          dbn = "remethdb_1123_0-0-1.h5",
-          dsn.data1 = "redsignal", dsn.data2 = "greensignal",
-          dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
+dbn <- "remethdb_1123_0-0-1.h5"
+# make rg h5se
+make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_rg", version = vers,
+          ts = ts, se = "rg", dsn.data1 = "redsignal", dsn.data2 = "greensignal",
+          addpheno = TRUE, dsn.md = "mdpost", dsn.rn = "redsignal.rownames",
           dsn.cn = "redsignal.colnames")
+
+# make nb h5se
+make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gr", version = vers,
+          ts = ts, se = "gr", dsn.data1 = "noobbeta", addpheno = TRUE,
+          dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
 
 #---------
 
