@@ -57,6 +57,20 @@ make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gm",
           addpheno = TRUE, phenopath = "mdpost_all-gsm-md.rda",
           dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
 
+#----------
+# load data
+#----------
+h5sefn <- "remethdb_h5se_rg_00-00-01_1583780004"
+seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
+dim(seh5)
+
+h5sefn <- "remethdb_h5se_gr_00-00-01_1583780004"
+seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
+dim(seh5)
+
+h5sefn <- "remethdb_h5se_gm_00-00-01_1583780004"
+seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
+dim(seh5)
 
 #---------
 
