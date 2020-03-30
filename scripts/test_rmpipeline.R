@@ -28,17 +28,29 @@ make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
           dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
           dsn.cn = "redsignal.colnames")
 
-#---------
-
+#-------------------
+# debugging at scale
+#-------------------
 library(rmpipeline)
 
 vers <- "0.0.1"
 rmd <- get_metadata("newrun", vers)
 ts <- rmd[["timestamp"]]
 
+idatspath <- "recount-methylation-files/idats"
+fnpath = "recount-methylation-analysis/files/mdata/compilations"
+
 dtables_fromsignal(version = "0.0.1", timestamp = ts,
-                   idatspath = "recount-methylation-files/idats",
-                   destpath = "recount-methylation-analysis/files/mdata/compilations")
+                   idatspath = idatspath, destpath = fnpath)
+
+fnl = c("redsignal_1583780004_0-0-1.mdat.compilation", 
+        "greensignal_1583780004_0-0-1.mdat.compilation")
+
+make_h5db(dbfnstem = "remethdb",
+          version = "0.0.1", ts = ts,
+          fnl = fnl, addmd = TRUE, mdpath = "mdpost_all-gsm-md.rda",
+          fnpath = fnpath, rmax = 1000)
 
 
-dtables_fromsignal2(version = "0.0.1", timestamp = ts)
+
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env R
 
-# Functions for the Recount Methylation Pipeline and `recountmethylation` R package.
+# Functions for `rmpipeline` and `recountmethylation` packages.
 
 #----------
 # Utilities
