@@ -8,14 +8,15 @@ dsnl = c("redsignal", "greensignal", "noobbeta")
 dbn = "remethdb_test.h5"
 h5createFile(dbn)
 rmax = 10; cmax = 10 # 622399
-
-# delete
+# delete old tables
 for(d in dsnl){
-  h5delete(dbn, d); h5delete(dbn, paste0(d, ".colnames")); h5delete(dbn, paste0(d, ".rownames"))
+  h5delete(dbn, d)
+  h5delete(dbn, paste0(d, ".colnames"))
+  h5delete(dbn, paste0(d, ".rownames"))
 }
-# h5delete(dbn, "redsignal"); h5delete(dbn, "greensignal"); h5delete(dbn, "noobbeta"); 
 
-h5ds.add = function(fnl, dsnl, rmax, cmax, nr.inc = 10, dbn = "remethdb_test.h5"){
+h5ds.add = function(fnl, dsnl, rmax, cmax, 
+                    nr.inc = 10, dbn = "remethdb_test.h5"){
   for(di in 1:length(dsnl)){
     fnread = fnl[di]; dsn = dsnl[di]
     h5createDataset(dbn, dsn, dims = c(rmax, cmax), 
@@ -73,26 +74,20 @@ h5ds.add(fnl = fnl, dsnl = dsnl, rmax = 100, cmax = 1000, nr.inc = 20)
 
 # test h5 write results
 dsn = "redsignal"; whichcol = c(1, 10); whichrow = c(1, 50)
-{
-  hi = h5read(dbn, dsn, index = list(whichrow[1]:whichrow[2], whichcol[1]:whichcol[2]))
-  #ci = h5read(dbn, paste0(dsn, ".colnames"), index = list(whichcol[1]:whichcol[2]))
-  #ri = h5read(dbn, paste0(dsn, ".rownames"), index = list(whichrow[1]:whichrow[2]))
-  
-  # grab first lines from file
-  dff = NULL
-  con <- file(fnread, "r")
-  cn = readLines(con, n = 1)
-  dati = unlist(strsplit(readLines(con, n = whichrow[2]), " "))
-  wdi = which(grepl(".*GSM.*", dati))
-  dff = matrix(nrow = 0, ncol = whichcol[2])
-  # make the new data slice
-  for(w in wdi){
-    wadd = w+1
-    dff = rbind(dff, matrix(dati[wadd:(wadd + whichcol[2] - 1)], nrow = 1))
-  }
-  class(dff) = "numeric"
-  close(con)
+hi = h5read(dbn, dsn, index = list(whichrow[1]:whichrow[2], whichcol[1]:whichcol[2]))
+dff = NULL
+con <- file(fnread, "r")
+cn = readLines(con, n = 1)
+dati = unlist(strsplit(readLines(con, n = whichrow[2]), " "))
+wdi = which(grepl(".*GSM.*", dati))
+dff = matrix(nrow = 0, ncol = whichcol[2])
+# make the new data slice
+for(w in wdi){
+  wadd = w+1
+  dff = rbind(dff, matrix(dati[wadd:(wadd + whichcol[2] - 1)], nrow = 1))
 }
+class(dff) = "numeric"
+close(con)
 identical(dff, hi)
 
 hi = h5read(dbn, dsn, index = list(1:10, 1:10))
