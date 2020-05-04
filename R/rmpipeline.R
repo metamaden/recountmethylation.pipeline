@@ -70,7 +70,6 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
 #' @return Creates new HDF5 database from DNAm signal data.
 #' @export
-
 dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint = 60,
                                fnstem = "mdat.compilation", sepval = " ", getnb = FALSE,
                                idatspath = paste("recount-methylation-files", "idats", sep = "/"),
