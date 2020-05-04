@@ -9,8 +9,7 @@ require(rmpipeline)
 
 vers <- "00.00.01"
 rmd <- get_metadata("newrun", vers)
-ts <- rmd[["timestamp"]] # 1583780004
-semd <- list(version = vers, timestamp = ts)
+ts <- rmd[["timestamp"]]
 
 dtables_fromsignal(version = "0.0.1", timestamp = ts,
                    idatspath = "idats", destpath = "compilations")
@@ -23,66 +22,35 @@ make_h5db(dbfnstem = "remethdb",
           fnpath = "compilations", rmax = 2)
 
 # make HDF5-SummarizedExperiment objects
-
-vers <- "00.00.01"
-ts <- "1583780004" # "123"
-dbn <- "remethdb2.h5"
-newfnstem <- "remethdb_h5se_rg" # "h5se_gr"
-se <- "rg" # "gr"
-# dsn.data1 <- "noobbeta"
-dsn.data1 <- "redsignal"
-dsn.data2 <- "grnsignal"
-dsn.rn <- "redsignal.rownames"
-dsn.cn <- "redsignal.colnames"
-
-
-dbn <- "remethdb2.h5"
-# make rg h5se
-make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_rg", version = vers,
-          ts = ts, se = "rg", dsn.data1 = "redsignal", dsn.data2 = "greensignal",
-          addpheno = TRUE, phenopath = "mdpost_all-gsm-md.rda",
-          dsn.md = "mdpost", dsn.rn = "redsignal.rownames",
+make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
+          dbn = "remethdb_1123_0-0-1.h5",
+          dsn.data1 = "redsignal", dsn.data2 = "greensignal",
+          dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
           dsn.cn = "redsignal.colnames")
 
-# make gr h5se
-make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gr", version = vers,
-          ts = ts, se = "gr", dsn.data1 = "noobbeta", addpheno = TRUE,
-          phenopath = "mdpost_all-gsm-md.rda",
-          dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
-
-# make gm h5se
-make_h5se(dbn = dbn, newfnstem = "remethdb_h5se_gm",
-          version = vers, ts = ts, se = "gr",
-          dsn.data1 = "methylated_signal", dsn.data2 = "unmethylated_signal",
-          addpheno = TRUE, phenopath = "mdpost_all-gsm-md.rda",
-          dsn.md = "mdpost", dsn.rn = "redsignal.rownames", dsn.cn = "redsignal.colnames")
-
-#----------
-# load data
-#----------
-h5sefn <- "remethdb_h5se_rg_00-00-01_1583780004"
-seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
-dim(seh5)
-
-h5sefn <- "remethdb_h5se_gr_00-00-01_1583780004"
-seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
-dim(seh5)
-
-h5sefn <- "remethdb_h5se_gm_00-00-01_1583780004"
-seh5 <- HDF5Array::loadHDF5SummarizedExperiment(h5sefn)
-dim(seh5)
-
-#---------
-
+#-------------------
+# debugging at scale
+#-------------------
 library(rmpipeline)
 
 vers <- "0.0.1"
 rmd <- get_metadata("newrun", vers)
 ts <- rmd[["timestamp"]]
 
+idatspath <- "recount-methylation-files/idats"
+fnpath = "recount-methylation-analysis/files/mdata/compilations"
+
 dtables_fromsignal(version = "0.0.1", timestamp = ts,
-                   idatspath = "recount-methylation-files/idats",
-                   destpath = "recount-methylation-analysis/files/mdata/compilations")
+                   idatspath = idatspath, destpath = fnpath)
+
+fnl = c("redsignal_1583780004_0-0-1.mdat.compilation", 
+        "greensignal_1583780004_0-0-1.mdat.compilation")
+
+make_h5db(dbfnstem = "remethdb",
+          version = "0.0.1", ts = ts,
+          fnl = fnl, addmd = TRUE, mdpath = "mdpost_all-gsm-md.rda",
+          fnpath = fnpath, rmax = 1000)
 
 
-dtables_fromsignal2(version = "0.0.1", timestamp = ts)
+
+
