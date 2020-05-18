@@ -11,8 +11,8 @@ vers <- "00.00.01"
 rmd <- get_metadata("newrun", vers)
 ts <- rmd[["timestamp"]]
 
-dtables_fromsignal(version = "0.0.1", timestamp = ts,
-                   idatspath = "idats", destpath = "compilations")
+# run this from recount-methylation main dir (e.g. `cd recount-methylation`)
+dtables_fromsignal(version = "0.0.1", timestamp = ts, getnb = FALSE)
 
 # make an HDF5 databse from data tables
 make_h5db(dbfnstem = "remethdb",
@@ -22,7 +22,23 @@ make_h5db(dbfnstem = "remethdb",
           fnpath = "compilations", rmax = 2)
 
 # make HDF5-SummarizedExperiment objects
+
+# RGset
 make_h5se("remethdb-seh5", "0.0.1", "1123", se = "rg",
+          dbn = "remethdb_1123_0-0-1.h5",
+          dsn.data1 = "redsignal", dsn.data2 = "greensignal",
+          dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
+          dsn.cn = "redsignal.colnames")
+
+# GRset
+make_h5se("remethdb-seh5", "0.0.1", "1123", se = "gr",
+          dbn = "remethdb_1123_0-0-1.h5",
+          dsn.data1 = "redsignal", dsn.data2 = "greensignal",
+          dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",
+          dsn.cn = "redsignal.colnames")
+
+# GMset
+make_h5se("remethdb-seh5", "0.0.1", "1123", se = "gm",
           dbn = "remethdb_1123_0-0-1.h5",
           dsn.data1 = "redsignal", dsn.data2 = "greensignal",
           dsn.rn = "redsignal.rownames", addpheno = TRUE, dsn.md = "mdpost",

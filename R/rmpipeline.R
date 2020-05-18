@@ -57,6 +57,196 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 # Make data tables from IDATs
 #----------------------------
 
+#' Get red and grn signal data tables
+#' 
+#' Generates 2-channel signal data tables. Validates IDATs, handles new paths and data.table options,
+#'  and provides verbose input from main for loop to write data. 
+#' @param version Version of the run for data table filenames.
+#' @param timestamp NTP timestamp integer, for filenames (see get_metadata function).
+#' @param verbose Whether to return verbose notifications.
+#' @param gsmint Number of GSMs to process at a time, typically runs best near 50 samples.
+#' @param overwrite Whether to overwrite existing data.table files with same destpath (default TRUE).
+#' @param fnstem Filename stem for data tables.
+#' @param sepval Separator symbol for data being written (default " ").
+#' @param idatspath Path to idat files to read
+#' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
+#' @return 
+#' @examples
+#' version = "0.0.1"
+#' timestamp = get_metadata("title", version)[["timestamp"]]
+#' dtables_rg(version = version, timestamp = timestamp)
+#' @export
+dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
+                       overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
+                       idatspath = paste("recount-methylation-files", "idats", sep = "/"),
+                       destpath = paste("recount-methylation-analysis",
+                                        "files", "mdata", "compilations", sep = "/")){
+  # get valid gsms idats dir
+  idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
+  gpath <- idatinfo[["gpath"]]
+  gsmu <- idatinfo[["gsmu"]]
+  if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
+  gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
+  if(verbose){message("Making new data tables")}
+  dtinfo <- dt_makefiles(gpath = gpath, idatspath = idatspath, 
+                         destpath = destpath, version = version, 
+                         nts = timestamp, overwrite = overwrite,
+                         verbose = verbose)
+  dtcond <- dtinfo[["dtcond"]]
+  if(dtcond){
+    reds.path <- dtinfo[["reds.path"]]
+    grns.path <- dtinfo[["grns.path"]]
+    if(verbose){message("Appending new table data for ", length(gsmii)," chunks...")}
+    tt <- Sys.time()
+    for(i in 1:length(gsmii)){
+      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath,
+                  gpath = gpath, reds.path = reds.path,
+                  grns.path = grns.path, verbose = verbose)
+      te <- Sys.time() - tt
+      if(verbose){message("Finished chunk ", i , " time elapsed: ", te)}
+    }
+  } else{stop("Problem encountered handling data tables.")}
+  if(verbose){message("Successfully completed data tables.")}
+  return(NULL)
+}
+
+#' Make and manage data.table files for red and grn signal
+#'
+#' Handles options for signal tables, returns paths used to write data chunks.
+#' @param gpath Path to GSM IDAT files, used for basenames when reading in data.
+#' @param idatspath Path to idat files to read
+#' @param destpath Destination path to new signal data tables.
+#' @param version File version information for file names.
+#' @param nts NTP timestamp integer, for filenames (see get_metadata function).
+#' @param overwrite Whether to overwrite existing data.table files with same destpath (default TRUE).
+#' @param fnstem Filename stem for data tables.
+#' @param verbose Whether to return verbose notifications.
+#' @return list containing dtcond (try conditions results), and new dt paths (reds.path and grns.path)
+#' @export
+dt_makefiles <- function(gpath, idatspath, destpath, version, nts, 
+                         overwrite = TRUE, fnstem = "mdat.compilation",
+                         verbose = TRUE){
+  version.fn <- gsub("\\.", "-", version)
+  reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
+  reds.fn <- paste(reds.fn, fnstem, sep = ".")
+  grns.fn <- paste("greensignal", nts, version.fn, sep = "_")
+  grns.fn <- paste(grns.fn, fnstem, sep = ".")
+  reds.path = paste(destpath, reds.fn, sep = "/")
+  grns.path = paste(destpath, grns.fn, sep = "/")
+  cn = c("gsmi")
+  rgi = minfi::read.metharray(c(paste(idatspath, gpath[1:2], sep = "/")))
+  rgcni = colnames(t(minfi::getRed(rgi))) # cgids as colnames
+  rgcn = matrix(c(cn, rgcni), nrow = 1)
+  if(overwrite){
+    if(verbose){message("Making/verifying data tables...")}
+    dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
+                                  append = FALSE, col.names = F))
+    dt2 <- try(data.table::fwrite(rgcn, grns.path, sep = sepval, 
+                                  append = FALSE, col.names = F))
+    dtcond <- is.null(dt1) & is.null(dt2)
+  } else{
+    dt1 <- try(file.exists(reds.path))
+    dt2 <- try(file.exists(grns.path))
+    dtcond <- dt1 == TRUE & dt1 == TRUE
+  }
+  lr <- list("dtcond" = dtcond,
+             "reds.path" = reds.path,
+             "grns.path" = grns.path)
+  return(lr)
+}
+
+#' Validate idats at path, returns gsmu and gpath
+#' 
+#' Checks for valid idat file pairs, checks for latest timestamps, 
+#' files with matching timestamps, and valid red/grn IDAT file pairs, 
+#' gets valid gsms idats dir.
+#' @param idatspath Path to idat files to read
+#' @return list containing gsmu and gpath
+#' @export
+dt_checkidat <- function(idatspath, verbose = TRUE){
+  if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
+  idats.lf = list.files(idatspath)
+  which.valid1 = grepl("\\.idat$", substr(idats.lf,
+                                          nchar(idats.lf) - 4,
+                                          nchar(idats.lf))) # idat ext
+  which.valid2 = grepl(".*hlink.*", idats.lf) # hlink
+  # timestamp
+  which.valid3 = length(gsub("\\..*", "", gsub(".*\\.", "", idats.lf))) > 0 
+  idats.valid = idats.lf[which.valid1 & which.valid2 & which.valid3]
+  gsmu = gsub("\\..*", "", idats.valid)
+  gsmu = gsmu[grepl("^GSM.*", gsmu)]
+  gsmu = unique(gsmu)
+  # red/grn channel files
+  if(verbose){message("Finding paired red and grn channel files...")}
+  gstr <- gsub(".*hlink\\.", "", gsub("(_Red.idat$|_Grn.idat$)", "", idats.valid))
+  rsub <- idats.valid[grepl(".*_Red.idat$", idats.valid)]
+  gsub <- idats.valid[grepl(".*_Grn.idat$", idats.valid)]
+  if(verbose){message("Intersecting .hlink and _Red.idat or _Grn.idat")}
+  gstr.rg <- intersect(gsub(".*hlink\\.", "", gsub("_Red.idat$", "", rsub)),
+                       gsub(".*hlink\\.", "", gsub("_Grn.idat$", "", gsub)))
+  idats.validf <- idats.valid[gstr %in% gstr.rg]
+  gpath <- unique(gsub("(_Red.idat|_Grn.idat)", "", idats.validf))
+  # filter on timestamps
+  if(verbose){message("Filtering files on latest timestamps...")}
+  gpath.ts <- c()
+  gpath.gid <- c()
+  gidv <- gsub("\\..*", "", gpath)
+  tidv <- gsub(".*\\.", "", gsub("\\.hlink.*", "", gpath))
+  # iterate on timestamps
+  tsu <- unique(tidv)
+  tsu <- tsu[rev(order(tsu))] # sort so that latest comes first
+  for(t in tsu){
+    gpathf <- gpath[tidv == t & !gidv %in% gpath.gid]
+    if(verbose){message("Removing redundant gsm ids in this iter")}
+    gpathf.gid <- gsub("\\..*", "", gpathf)
+    gpathf <- gpathf[!duplicated(gpathf.gid)]
+    if(verbose){message("Appending new fn")}
+    gpath.ts <- c(gpath.ts, gpathf)
+    if(verbose){message("remaking gid list")}
+    gpath.gid <- gsub("\\..*", "", gpath.ts)
+  }
+  gpath <- gpath.ts
+  gsmu <- gsub("\\..*", "", gpath)
+  lr <- list("gsmu" = gsmu, "gpath" = gpath)
+  return(lr)
+}
+
+#' Writes chunk of red and grn signal data
+#'
+#' @param gi Vector of valid sample basenames to read (e.g. have valid IDAT pairs).
+#' @param idatspath Path to idat files directory.
+#' @param reds.path Path to new red signal data table.
+#' @param grns.path Path to new grn signal data table.
+#' @param sepval Separator symbol for data tables.
+#' @param verbose Whether to include verbose messages.
+#' @return NULL, writes data chunks as side effect
+#' @export
+dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path, 
+                        sepval = " ", verbose = TRUE){
+  if(verbose){message("Reading in new data")}
+  pathl = paste(idatspath, gpath[gi], sep = "/")
+  rgi = try(minfi::read.metharray(c(pathl)))
+  if(!class(rgi) == "RGChannelSet"){
+    message("There was a problem reading data chunk num. ", i)
+  } else{
+    if(verbose){message("getting data matrices")}
+    redi = matrix(c(colnames(rgi), 
+                    t(minfi::getRed(rgi))), ncol = nrow(rgi) + 1)
+    grni = matrix(c(colnames(rgi), 
+                    t(minfi::getGreen(rgi))), ncol = nrow(rgi) + 1)
+    if(verbose){message("appending new data")}
+    data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
+    data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
+  }
+  return(NULL)
+}
+
+
+
+
+#--------------
+# OLD FUNCTIONS
+#--------------
 #' Make data tables from IDATs
 #'
 #' Make data tables from IDATs, including red and green channel signals and noob-normalized Beta-values.
@@ -75,7 +265,6 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
                                idatspath = paste("recount-methylation-files", "idats", sep = "/"),
                                destpath = paste("recount-methylation-analysis",
                                                 "files", "mdata", "compilations", sep = "/")){
-
   # get run metadata
   if(is.null(timestamp)){
     runmd <- get_metadata(version, "notitle")
@@ -83,7 +272,6 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
   } else{
     nts <- timestamp
   }
-
   # get valid gsms idats dir
   if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
   idats.lf = list.files(idatspath)
@@ -99,7 +287,6 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
   gsmu = gsub("\\..*", "", idats.valid)
   gsmu = gsmu[grepl("^GSM.*", gsmu)]
   gsmu = unique(gsmu)
-
   # red/grn channel files
   if(verbose){message("Finding paired red and grn channel files...")}
   gstr <- gsub(".*hlink\\.", "", gsub("(_Red.idat$|_Grn.idat$)", "", idats.valid))
@@ -135,10 +322,8 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
                       "Found ", length(gsmu),
                       " valid file pairs.")
     }
-
   # get GSM ID indices by interval, as list
   gsmii = getblocks(length(gsmu), gsmint)
-
   # make new data paths
   if(verbose){message("Making and instantiating new data table files...")}
   reds.fn <- paste(paste("redsignal", nts,
@@ -158,7 +343,6 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
                    fnstem, sep = ".")
     nb.path = paste(destpath, nb.fn, sep = "/")
   }
-
   # instantiate new empty data tables with probes as colnames
   cn = c("gsmi")
   rgi = minfi::read.metharray(c(paste(idatspath, gpath[1:2], sep = "/")))
@@ -173,7 +357,6 @@ dtables_fromsignal <- function(version, timestamp = NULL, verbose = TRUE, gsmint
     nbcn = matrix(c(cn, colnames(t(getBeta(nbi)))), nrow = 1)
     data.table::fwrite(nbcn, nb.path, sep = sepval, append = FALSE, col.names = F)
   }
-
   # append new methdata
   tt = Sys.time()
   for(i in 1:length(gsmii)){
@@ -432,13 +615,11 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
 #' @export
 make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
                       rmax = 35300, cmax = 622399,
-                      rmoldh5 = TRUE, newtables = TRUE,
+                      rmoldh5 = TRUE, newtables = FALSE,
                       addmd = TRUE, mdpath = NULL,
                       nr.inc = 10, ngsm.block = 50, verbose = TRUE,
-                      dsnl = c("redsignal", "greensignal", "mdpost",
-                               "unmethylated_signal", "methylated_signal",
-                               "noobbeta")){
-
+                      dsnl = c("redsignal", "greensignal", "mdpost")){
+  require(rhdf5)
   # make new h5 db filename
   dbn <- paste(paste(dbfnstem, ts,
                      gsub("\\.", "-", version),
@@ -465,21 +646,21 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
   if(verbose){message("Finished adding red and green channel data.")}
 
   # optionally add meth, unmeth, and noobbeta tables
-  if(newtables){
-    if(verbose){message("Adding new data sets from h5 signal tables...")}
-    h5_newtables(dbn, verbose = verbose)
-  }
+  #if(newtables){
+  #  if(verbose){message("Adding new data sets from h5 signal tables...")}
+  #  h5_newtables(dbn, verbose = verbose)
+  #}
 
   # optionally add sample metadata
   # note: FINISH THIS PART!
-  if(addmd & !is.null(mdpath)){
-    if(verbose){message("Adding sample metadata to db...")}
-    h5_addmd(dbn, mdpath, verbose = verbose)
-  } else{
-    if(verbose){message("Failed adding metadata.",
-                        "Option addmd is TRUE, but no mdpath specified!",
-                        "Continuing..")}
-  }
+  #if(addmd & !is.null(mdpath)){
+  #  if(verbose){message("Adding sample metadata to db...")}
+  #  h5_addmd(dbn, mdpath, verbose = verbose)
+  #} else{
+  #  if(verbose){message("Failed adding metadata.",
+  #                      "Option addmd is TRUE, but no mdpath specified!",
+  #                      "Continuing..")}
+  #}
 
   # finally, close open connections
   rhdf5::h5closeAll()
