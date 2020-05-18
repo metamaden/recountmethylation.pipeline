@@ -594,6 +594,10 @@ make_h5se <- function(dbn, newfnstem, version, ts,
     mset <- get(data(MsetEx, package = "minfiData"))
     mrset <- minfi::mapToGenome(mset)
     grcg <- GenomicRanges::granges(mrset)
+    grcg <- grcg[order(match(names(grcg), rownames(mset)))]
+    if(idnetical(names(grcg), rownames(mset))){
+        stop("Error matching grcg to manifest cgids!")
+      }
   }
   # load data table
   if(verbose){message("Getting dsn.data1...")}
