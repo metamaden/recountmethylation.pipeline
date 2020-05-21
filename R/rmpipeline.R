@@ -362,90 +362,7 @@ h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
   return(NULL)
 }
 
-#' Make new minfi data tables from base h5 db
-#'
-#' Uses minfi to populate new data tables (noobbeta, methylated and unmethylated signal) from h5 db with red and green signal data.
-#'
-#' @param dbn Name or path to h5 db.
-#' @param dsn.nb Name of the new noobbeta h5 dataset.
-#' @param dsn.meth Name of the new methylated h5 dataset.
-#' @param dsn.unmeth Name of the new unmethylated h5 dataset
-#' @param dsn.red Name of existing red signal h5 dataset.
-#' @param dsn.grn Name of existing green signal h5 dataset.
-#' @param verbose Whether to show verbose status messages.
-#' @param ngsm.block Number of GSMs (samples) per process block (default 50).
-#' @param ncol.chunk Number of columns (GSMs/samples) per chunk in saved h5 datasets.
-#' @return Adds new minfi h5 datasets to specified h5 db (dbn).
-#' @export
-h5_newtables <- function(dbn, dsn.nb = "noobbeta",
-                         dsn.meth = "methylated_signal",
-                         dsn.unmeth = "unmethylated_signal",
-                         dsn.red = "redsignal", dsn.grn = "greensignal",
-                         verbose = TRUE, ngsm.block = 50,
-                         ncol.chunk = 5000){
-  # Generate noobbeta and meth/unmeth signal tables
-  # get dimensions from red and grn signal data
-  if(verbose){message("Getting red and green signal h5 object info...")}
-  rs.rn <- rhdf5::h5read(dbn, paste0(dsn.red, ".rownames"))
-  rs.cn <- rhdf5::h5read(dbn, paste0(dsn.red, ".colnames"))
-  gs.rn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".rownames"))
-  gs.cn <- rhdf5::h5read(dbn, paste0(dsn.grn, ".colnames"))
-  if(verbose){message("Getting blocked indices of row data to process...")}
-  sbv <- getblocks(length(rs.rn), ngsm.block)
-  # get new cg  dimensions
-  if(verbose){message("Getting manifest and setting new colname dim...")}
-  anno.name = "IlluminaHumanMethylation450kanno.ilmn12.hg19"
-  man = eval(parse(text = paste(anno.name, "Manifest", sep = "::")))
-  ncg = nrow(man)
-  # new h5 data params
-  newdims <- c(length(rs.rn), ncg)
-  chunkvars <- c(5, ncol.chunk)
-  # make new tables
-  rhdf5::h5createDataset(dbn, "unmethylated_signal", dims = newdims,
-                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
-                         storage.mode = "double", level = 5, chunk = chunkvars)
-  rhdf5::h5createDataset(dbn, "methylated_signal", dims = newdims,
-                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
-                         storage.mode = "double", level = 5, chunk = chunkvars)
-  rhdf5::h5createDataset(dbn, "noobbeta", dims = newdims,
-                         maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
-                         storage.mode = "double", level = 5, chunk = chunkvars)
-  # append new data
-  if(verbose){message("Appending new data to h5 datasets...")}
-  t1 <- Sys.time()
-  for(i in 1:length(sbv)){
-    b = sbv[[i]]
-    gsmvi <- gsub("\\..*", "", rs.rn[b])
-    se.rgi = recountmethylation::getrg(gsmv = gsmvi,
-                                       cgv = "all", dbn = dbn,
-                                       data.type = "se",
-                                       metadata = FALSE,
-                                       verbose = FALSE)
-    # new se and data objects
-    se.nb <- minfi::preprocessNoob(se.rgi)
-    methb <- t(minfi::getMeth(se.nb))
-    unmethb <- t(minfi::getUnmeth(se.nb))
-    nb <- t(minfi::getBeta(se.nb))
-    # append new data to h5 data
-    writei <- list(b[1]:b[length(b)], 1:ncg)
-    rhdf5::h5write(unmethb, file = dbn,
-                   name = dsn.unmeth, index = writei)
-    rhdf5::h5write(methb, file = dbn,
-                   name = dsn.meth, index = writei)
-    rhdf5::h5write(nb, file = dbn,
-                   name = dsn.nb, index = writei)
-    if(verbose){
-      message("finished block ", i," of ",
-              length(sbv),", time elapsed: ",
-              Sys.time() - t1)
-    }
-  }
-  if(verbose){message("Completed addition of new tables!")}
-  rhdf5::h5closeAll() # close open connections to db
-  return(NULL)
-}
-
-#' Make and populate a new HDF5 database
+#' Make and populate a new HDF5 database with red and green signal, and metadata
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
 #' @param dbfnstem Stem of filename for h5 database (to which ts and version appended)
@@ -457,7 +374,6 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
 #' @param rmax Total rows to append to data sets, reflecting total samples.
 #' @param cmax Total columns to append to data sets, reflecting total assays or probes. Should be 622399 for raw red/grn signal.
 #' @param newtables Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).
-#' @param addmd Whether to add metadata to the h5db object.
 #' @param mdpath If addmd, the path to the metadata file to load.
 #' @param nr.inc Number of samples to append at a time (default: 10, passed to `h5_addtables()`).
 #' @param ngsm.block Number of GSMs (samples) per process block (default 50, passed to `h5_newtables()`).
@@ -465,21 +381,17 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
 #' @param dsnl Vector of new h5 data set objects in the h5db object, corresponding (1:1) to the files declared in fnl.
 #' @return Populates the HDF5 database
 #' @export
-make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
+makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
                       rmax = 35300, cmax = 622399,
-                      rmoldh5 = TRUE, newtables = FALSE,
-                      addmd = TRUE, mdpath = NULL,
+                      rmoldh5 = TRUE, newtables = FALSE, mdpath = NULL,
                       nr.inc = 10, ngsm.block = 50, verbose = TRUE,
                       dsnl = c("redsignal", "greensignal", "mdpost")){
   require(rhdf5)
   # make new h5 db filename
-  dbn <- paste(paste(dbfnstem, ts,
-                     gsub("\\.", "-", version),
-                     sep = "_"), "h5",
-               sep = ".")
+  fn <- paste(dbfnstem, ts, gsub("\\.", "-", version), sep = "_")
+  dbn <- paste(fn, "h5", sep = ".")
   if(verbose){message("Making new h5 db file: ", dbn)}
   suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
-
   # remove old data, if present
   if(rmoldh5){
     if(verbose){message("Removing old data...")}
@@ -489,37 +401,26 @@ make_h5db <- function(dbfnstem, version, ts, fnl, fnpath,
       suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), silent = TRUE))
     }
   }
-
   # add red and grn signal tables
   if(verbose){message("Adding and populating data tables to HDF5 database")}
   h5_addtables(dbn = dbn, fnl = fnl, dsnl = c("redsignal", "greensignal"),
                rmax = rmax, cmax = cmax, nr.inc = ngsm.block,
                fnpath = fnpath, verbose = verbose)
   if(verbose){message("Finished adding red and green channel data.")}
-
-  # optionally add meth, unmeth, and noobbeta tables
-  #if(newtables){
-  #  if(verbose){message("Adding new data sets from h5 signal tables...")}
-  #  h5_newtables(dbn, verbose = verbose)
-  #}
-
-  # optionally add sample metadata
-  # note: FINISH THIS PART!
-  #if(addmd & !is.null(mdpath)){
-  #  if(verbose){message("Adding sample metadata to db...")}
-  #  h5_addmd(dbn, mdpath, verbose = verbose)
-  #} else{
-  #  if(verbose){message("Failed adding metadata.",
-  #                      "Option addmd is TRUE, but no mdpath specified!",
-  #                      "Continuing..")}
-  #}
-
+  # add sample metadata
+  if(!is.null(mdpath)){
+    if(verbose){message("Adding sample metadata to db...")}
+    h5_addmd(dbn, mdpath, verbose = verbose)
+  } else{if(verbose){message("No mdpath specified!")}}
   # finally, close open connections
   rhdf5::h5closeAll()
-
   if(verbose){message("Finished all processes. Returning.")}
   return(NULL)
 }
+
+
+
+
 
 #-----------------------
 # Make the SE-H5 objects
@@ -628,7 +529,7 @@ make_h5se <- function(dbn, newfnstem, version, ts,
     mrset <- minfi::mapToGenome(mset)
     grcg <- GenomicRanges::granges(mrset)
     grcg <- grcg[order(match(names(grcg), rownames(mset)))]
-    if(idnetical(names(grcg), rownames(mset))){
+    if(!identical(names(grcg), rownames(mset))){
         stop("Error matching grcg to manifest cgids!")
       }
   }

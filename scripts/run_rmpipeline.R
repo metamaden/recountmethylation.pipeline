@@ -4,6 +4,15 @@
 
 require(rmpipeline)
 
+# from main recount-methylation (base directory)
+dtables_rg(version, timestamp)
+
+# from recount-methylation/recount-methylation-analysis/files/mdata/compilations
+makeh5db_rg(dbfnstem = "remethdb", version = "0.0.1", ts = 1589820348, 
+            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".",
+            fnl = c("redsignal_1589820348_0-0-1.mdat.compilation",
+                    "greensignal_1589820348_0-0-1.mdat.compilation"))
+
 # make data tables from IDAT files
 rmpipeline::h5db.fromsignal(version = commandArgs(T)[1])
 
