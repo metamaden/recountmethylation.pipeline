@@ -1,0 +1,6 @@
+# TODO
+
+h5_addtables
+. check datatype -- should appear as FLOAT in the h5 file
+. currently adds type "double"
+. size of h5 file is way too large currently (could be file type issue)

@@ -300,3 +300,140 @@ h5_newtables <- function(dbn, dsn.nb = "noobbeta",
   rhdf5::h5closeAll() # close open connections to db
   return(NULL)
 }
+
+
+#' Use DelayedArray function to store H5 SummarizedExperiment directory
+#'
+#' Use DelayedArray function to store H5 SummarizedExperiment directory from h5 db. Handles 3 classes of Summarized Experiment objects.
+#'
+#' @param newfnstem Filename stem of H5-SE directory.
+#' @param version Version of object, to be appended to fnstem.
+#' @param ts Timestamp of object, to be appended to fnstem.
+#' @param se Type of SummarizedExperiment to parse (either `rg` for RGChannelSet, `gr` for GenomicRatioSet, or `gm` for GenomicMethylSet).
+#' @param dbn Name or path to h5 db.
+#' @param dsn.data1 Name of first dataset in h5 db (required).
+#' @param dsn.data2 Name of second dataset in h5 db (required if se either rg or gm).
+#' @param phenopath Sample metadata file (columns are fields, rows are samples).
+#' @param dsn.rn Name of object in h5 db with the rownames (GSM or sample basenames).
+#' @param dsn.cn Optional name of h5db object containing the column names (cg ids/addresses, default: NULL).
+#' @param semd Metadata for new H5-SE object. Should be a list including timestamp, version, description, etc.
+#' @param verbose Whether to show verbose status messages.
+#' @param replace.opt Whether to replace/overwrite any existing H5SE directories of the same name as `newfn`.
+#' @return List of index blocks of min length `slength`/`bsize`
+#' @export
+make_h5se <- function(dbn, newfnstem, version, ts,
+                      dsn.data1, dsn.md = "mdpost", mdpath = NULL,
+                      se = c("rg", "gr", "gm"), dsn.rn = "redsignal.rownames",
+                      dsn.cn = "redsignal.colnames",
+                      semd = list("title" = "Recount Methylation H5-SE Object",
+                                  "version" = version,
+                                  "timestamp" = ts),
+                      dsn.data2 = NULL, addpheno = FALSE, phenopath = NULL,
+                      verbose = TRUE, replace.opt = TRUE){
+  # Creates an SE-H5 object from an HDF5 db
+  # make the new filename
+  newfn <- paste(newfnstem, gsub("\\.", "-", version), ts, sep = "_")
+  # check the specified se
+  if(length(se) > 1){stop("Specify a single se set to process per run.")}
+  # anno for se sets
+  if(verbose){message("Setting annotation info...")}
+  anno = c("IlluminaHumanMethylation450k", "ilmn12.hg19")
+  names(anno) = c("array", "annotation")
+  # get granges object
+  if("gr" %in% se | "gm" %in% se){
+    if(verbose){message("Getting the GRanges object...")}
+    mset <- get(data(MsetEx, package = "minfiData"))
+    mrset <- minfi::mapToGenome(mset)
+    grcg <- GenomicRanges::granges(mrset)
+    grcg <- grcg[order(match(names(grcg), rownames(mset)))]
+    if(!identical(names(grcg), rownames(mset))){
+      stop("Error matching grcg to manifest cgids!")
+    }
+  }
+  # load data table
+  if(verbose){message("Getting dsn.data1...")}
+  ldat <- list()
+  nb <- HDF5Array::HDF5Array(dbn, dsn.data1)
+  rn <- rhdf5::h5read(dbn, dsn.rn)
+  cn <- rhdf5::h5read(dbn, dsn.cn)
+  rownames(nb) <- as.character(rn)
+  nb <- t(nb)
+  ldat[[dsn.data1]] <- nb
+  # sanity checks and parse data2
+  if(!is.null(dsn.data2)){
+    if(verbose){message("Getting dsn.data2...")}
+    nb <- HDF5Array::HDF5Array(dbn, dsn.data2)
+    rownames(nb) <- as.character(rn)
+    nb <- t(nb)
+    rownames(nb) <- as.character(cn)
+    if(!identical(nrow(nb), nrow(ldat[[1]])) |
+       !identical(ncol(nb), ncol(ldat[[1]]))){
+      stop("Matrix dsn.data2 not similar dim to dsn.data1!")
+    }
+    ldat[[dsn.data2]] <- nb
+  } else if ("rg" %in% se | "gm" %in% se){
+    stop("Must provide dsn.data2 for se as rg or gm!")
+  }
+  # get probe ids or addresses
+  if(verbose){message("Getting probe ids/addresses...")}
+  if(se %in% c("gm", "gr")){
+    man.package <- "IlluminaHumanMethylation450kanno.ilmn12.hg19"
+    man <- get(data(Manifest, package = man.package))
+    cgrn <- rownames(man)
+    ldat <- lapply(ldat, function(x){
+      rownames(x) <- cgrn
+      return(x)
+    })
+  }
+  # make the new H5-SE set(s)
+  if(verbose){message("Making the new se object...")}
+  if("rg" %in% se){
+    if(verbose){message("Making RGChannelSet...")}
+    gri <- minfi::RGChannelSet(Red = ldat[[1]],
+                               Green = ldat[[2]],
+                               anno = anno)
+    metadata(gri) <- semd
+  } else if ("gr" %in% se){
+    if(verbose){message("Making GenomicRatioSet...")}
+    gri <- minfi::GenomicRatioSet(gr = grcg,
+                                  Beta = ldat[[1]],
+                                  anno = anno)
+    metadata(gri) <- semd
+  } else{
+    if(verbose){message("Making GenomicMethylSet...")}
+    gri <- minfi::GenomicMethylSet(gr = grcg,
+                                   Meth = ldat[[1]],
+                                   Unmeth = ldat[[2]],
+                                   anno = anno)
+    metadata(gri) <- semd
+  }
+  # append pheno data
+  if(addpheno){
+    if(is.null(phenopath)){
+      message("No phenopath provided, checking ",
+              "HDF5 db for sample metadata...")
+      if(dsn.md %in% h5ls(dbn) &
+         paste0(dsn.md, ".colnames") %in% h5ls(dbn)){
+        if(verbose){message("Sample metadata detected in dbn. ",
+                            "Adding sample metadata as pheno data...")}
+        mdp <- data_mdpost(dbn, dsn.md)
+        gri <- se_addpheno(pdat = mdp, se = gri)
+      }
+      message("Couldn't add pheno data!",
+              " Specify phenopath or ensure",
+              " the dsn.md entity exists in dbn.",
+              " Continuing...")
+    } else{
+      if(verbose){message("Adding sample metadata from phenopath...")}
+      gri <- se_addpheno(phenopath, se = gri)
+    }
+  }
+  # start the run and save the new H5-SE set
+  t1 <- Sys.time()
+  if(verbose){message("Starting process to make new file ", newfn, "...")}
+  HDF5Array::saveHDF5SummarizedExperiment(gri,
+                                          dir = newfn,
+                                          replace = replace.opt)
+  if(verbose){message("Save complete, time elapsed:", Sys.time() - t1)}
+  return(NULL)
+}
