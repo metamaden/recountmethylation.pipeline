@@ -498,6 +498,13 @@ se_addpheno <- function(phenopath, se, pdat = NULL, verbose = TRUE){
   return(NULL)
 }
 
+#' Blah
+#'
+#' Blah
+#' @param version The data file version.
+#' @param ts Data file NTP timestamp (integer).
+#' @returns New h5se object.
+#' @export
 make_h5se_rg <- function(version = "0.0.1", ts = 1590090412, dbn = "remethdb_1590090412_0-0-1.h5",
                          newfnstem = "remethdb_h5se-rg", dsnv = c("redsignal", "greensignal"), 
                          dsn.md = "mdpost", dsn.md.cn = paste0(dsn.md, ".colnames"), 
@@ -545,5 +552,234 @@ make_h5se_rg <- function(version = "0.0.1", ts = 1590090412, dbn = "remethdb_159
   if(verbose){message("Adding data to new file ", newfn, "...")}
   HDF5Array::saveHDF5SummarizedExperiment(gri, dir = newfn, replace = replace.opt)
   if(verbose){message("Data additions complete, time elapsed:", Sys.time() - t1)}
+  return(NULL)
+}
+
+#' Make an HDF5 h5 file with MethylSet data, from an RGChannelSet 
+#' h5se file
+#'
+#' Makes an HDF5 h5 database file with raw/unnormalized methylated and 
+#' unmethylated signal, including rows and columns as datasets.
+#' @param dbn Path to the RGChannelSet h5se object.
+#' @param version Version for new h5 file.
+#' @param ts Timestamp for new h5 file.
+#' @param newfnstem New filename stem for h5 file.
+#' @param verbose Whether to return verbose messages (default TRUE).
+#' @param replace.opt Whether to replace h5 files with duplicate filename 
+#' (default TRUE).
+#' @param blocksize Size of blocks/number of samples to process at a time 
+#' (default 65).
+#' @returns Path to new h5 object.
+#' @export
+make_h5_gm <- function(dbn, version, ts, newfnstem = "remethdb_h5", 
+                        verbose = TRUE, replace.opt = TRUE, blocksize = 65){
+  rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn)
+  message("Making new h5 file and datasets.")
+  h5dbn <- paste(newfnstem, se, version, ts, sep = "_")
+  h5dbn <- paste0(c(h5dbn, "h5"), collapse = ".") 
+  rhdf5::h5createFile(h5dbn)
+  dsv <- c("meth", "unmeth")
+  for(d in dsv){
+    rhdf5::h5createDataset(h5dbn, d, dims = list(485512, 36240), 
+      maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()), 
+      storage.mode = "double", level = 5, chunk = c(1000, 50))
+  }
+  rhdf5::h5createDataset(h5dbn, "rownames", dims = list(485512), 
+      maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
+      level = 5, chunk = c(1000))
+  rhdf5::h5createDataset(h5dbn, "colnames", dims = list(36240), 
+    maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
+    level = 5, chunk = c(1000))
+  if(verbose){message("Getting blocks of sample indices.")}
+  blocks <- getblocks(ncol(rg), bsize = blocksize)
+  if(verbose){message("Writing first block of data.")}
+  b <- 1
+  cindices <- blocks[[b]]
+  rgi <- rg[, cindices]
+  gm <- minfi::preprocessRaw(rgi)
+  meth <- as.matrix(minfi::getMeth(gm))
+  unmeth <- as.matrix(minfi::getUnmeth(gm))
+  rhdf5::h5write(meth, file = h5dbn, name = "meth", 
+          index = list(1:485512, cindices[1]:cindices[length(cindices)]))
+  rhdf5::h5write(unmeth, file = h5dbn, name = "unmeth", 
+          index = list(1:485512, cindices[1]:cindices[length(cindices)]))
+  if(verbose){message("Writing rows and cols.")}
+  rhdf5::h5write(colnames(rg), file = h5dbn, name = "colnames", index = list(1:ncol(rg)))
+  rhdf5::h5write(rownames(gm), file = h5dbn, name = "rownames", index = list(1:485512))
+  message("Writing data blocks.")
+  t1 <- Sys.time()
+  for(b in 2:length(blocks)){
+    cindices <- blocks[[b]]
+    gm <- minfi::preprocessRaw(rg[,cindices])
+    meth <- as.matrix(minfi::getMeth(gm))
+    unmeth <- as.matrix(minfi::getUnmeth(gm))
+    write.indices <- cindices[1]:cindices[length(cindices)]
+    rhdf5::h5write(meth, index = list(1:485512, write.indices), file = h5dbn, 
+        name = "meth")
+    rhdf5::h5write(unmeth, index = list(1:485512, write.indices), file = h5dbn, 
+        name = "unmeth")
+    if(verbose){
+      message("Finished block ", b, ", time elapsed = ", Sys.time() - t1)
+    }
+  }
+  message("Finished writing data blocks. Returning h5 name.")
+  return(h5dbn)
+}
+
+
+#' Make an HDF5 h5 file with GenomicRatioSet data, from an RGChannelSet 
+#' h5se file
+#'
+#' Makes an HDF5 h5 file containing noob-normalized Beta-values, including
+#' rows and columns as separate datasets.
+#' @param dbn Path to the RGChannelSet h5se object.
+#' @param version Version for new h5 file.
+#' @param ts Timestamp for new h5 file.
+#' @param newfnstem New filename stem for h5 file.
+#' @param replace.opt Whether to replace h5 files with duplicate filename 
+#' (default TRUE).
+#' @param blocksize Size of blocks/number of samples to process at a time 
+#' (default 65).
+#' @param verbose Whether to return verbose messages (default TRUE).
+#' @returns Path to new h5 object.
+#' @export
+make_h5_gr <- function(dbn, version, ts, newfnstem = "remethdb_h5",
+                        replace.opt = TRUE, blocksize = 65, verbose = TRUE){
+  rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn)
+  message("Making new h5 file and datasets.")
+  h5dbn <- paste(newfnstem, se, version, ts, sep = "_")
+  h5dbn <- paste0(c(h5dbn, "h5"), collapse = ".") 
+  rhdf5::h5createFile(h5dbn)
+  rhdf5::h5createDataset(h5dbn, "noobbeta", dims = list(485512, 36240), 
+      maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()), 
+      storage.mode = "double", level = 5, chunk = c(1000, 50))
+  rhdf5::h5createDataset(h5dbn, "rownames", dims = list(485512), 
+      maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
+      level = 5, chunk = c(1000))
+  rhdf5::h5createDataset(h5dbn, "colnames", dims = list(36240), 
+    maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
+    level = 5, chunk = c(1000))
+  if(verbose){message("Getting blocks of sample indices.")}
+  blocks <- getblocks(ncol(rg), bsize = blocksize)
+  if(verbose){message("Writing first block of data.")}
+  b <- 1
+  cindices <- blocks[[b]]
+  rgi <- rg[, cindices]
+  gr <- minfi::preprocessNoob(rgi)
+  nbeta <- as.matrix(minfi::getBeta(gr))
+  rhdf5::h5write(nbeta, file = h5dbn, name = "noobbeta", 
+          index = list(1:485512, cindices[1]:cindices[length(cindices)]))
+  if(verbose){message("Writing rows and cols.")}
+  rhdf5::h5write(colnames(rg), file = h5dbn, name = "colnames", index = list(1:ncol(rg)))
+  rhdf5::h5write(rownames(gr), file = h5dbn, name = "rownames", index = list(1:485512))
+  message("Writing data blocks.")
+  t1 <- Sys.time()
+  for(b in 2:length(blocks)){
+    cindices <- blocks[[b]]
+    gr <- minfi::preprocessNoob(rg[,cindices])
+    nbeta <- as.matrix(minfi::getBeta(gr))
+    write.indices <- cindices[1]:cindices[length(cindices)]
+    rhdf5::h5write(nbeta, file = h5dbn, name = "noobbeta", 
+          index = list(1:485512, cindices[1]:cindices[length(cindices)]))
+    if(verbose){
+      message("Finished block ", b, ", time elapsed = ", Sys.time() - t1)
+    }
+  }
+  message("Finished writing data blocks. Returning h5 name.")
+  return(h5dbn)
+}
+
+#' Make an h5se object from an h5se gm file
+#' 
+#' @param version Version for new filenames.
+#' @param ts NTP timestamp.
+#' @param h5name Name of the h5 file to read data from.
+#' @param pdata Metadata object obtained from pData(se). 
+#' @param replaceopt Whether to overwrite existing file of same name as new file
+#' (default = TRUE).
+#' @param newdnstem Stem for new h5se object file.
+#' @return NULL, generates a new h5se file.
+#' @export
+make_h5se_gm <- function(version, ts, h5name, pdata, replaceopt = TRUE,
+    newdnstem = "remethdb-h5se"){
+  require(minfiData)
+  message("Getting new name.")
+  newfn <- paste0(newdnstem, "gm", version, ts, sep = "_")
+  message("Getting granges.")
+  ms <- minfi::mapToGenome(get(data("MsetEx")))
+  anno <- minfi::annotation(ms)
+  gr <- GenomicRanges::granges(ms)
+  message("Reading datasets.")
+  meth <- HDF5Array::HDF5Array(h5name, "meth")
+  unmeth <- HDF5Array::HDF5Array(h5name, "unmeth")
+  cn <- rhdf5::h5read(h5name, "colnames")
+  rn <- rhdf5::h5read(h5name, "rownames")
+  rownames(meth) <- rownames(unmeth) <- as.character(rn)
+  colnames(meth) <- colnames(unmeth) <- as.character(cn)
+  gr <- gr[order(match(names(gr), rownames(meth)))]
+  icond <- identical(rownames(meth), names(gr))
+  if(!icond){stop("Problem matching gr names to h5 meth rows")}
+  icond <- identical(rownames(unmeth), names(gr))
+  if(!icond){stop("Problem matching gr names to h5 unmeth rows")}
+  icond <- identical(colnames(meth), rownames(pdata))
+  if(!icond){stop("Problem matching pdata rows to h5 meth cols")}
+  icond <- identical(colnames(unmeth), rownames(pdata))
+  if(!icond){stop("Problem matching pdata rows to h5 unmeth cols")}
+  message("Writing new data to h5se object. This may take awhile.")
+  meth <- HDF5Array::HDF5Array(h5name, "meth")
+  unmeth <- HDF5Array::HDF5Array(h5name, "unmeth")
+  cn <- rhdf5::h5read(h5name, "colnames")
+  rn <- rhdf5::h5read(h5name, "rownames")
+  rownames(meth) <- rownames(unmeth) <- as.character(rn)
+  colnames(meth) <- colnames(unmeth) <- as.character(cn)
+  gm <- minfi::GenomicMethylSet(gr = gr, Meth = meth, Unmeth = unmeth, 
+                          annotation = anno)
+  pData(gm) <- pdata
+  HDF5Array::saveHDF5SummarizedExperiment(gm, dir = newfn, replace = replaceopt)
+  message("Finished writing h5se data.")
+  return(NULL)
+}
+
+#' Make an h5se object from an h5se gr file
+#' 
+#' @param version Version for new filenames.
+#' @param ts NTP timestamp.
+#' @param h5name Name of the h5 file to read data from.
+#' @param pdata Metadata object obtained from pData(se). 
+#' @param replaceopt Whether to overwrite existing file of same name as new file
+#' (default = TRUE).
+#' @param newdnstem Stem for new h5se object file.
+#' @return NULL, generates a new h5se file.
+#' @export
+make_h5se_gr <- function(version, ts, h5name, pdata, replaceopt = TRUE,
+    newdnstem = "remethdb-h5se"){
+  require(minfiData)
+  message("Getting new name.")
+  newfn <- paste0(newdnstem, "gr", version, ts, sep = "_")
+  message("Getting granges and annotation.")
+  ms <- minfi::mapToGenome(get(data("MsetEx")))
+  anno <- minfi::annotation(ms)
+  gr <- GenomicRanges::granges(ms)
+  message("Reading datasets.")
+  nbeta <- HDF5Array::HDF5Array(h5name, "noobbeta")
+  cn <- rhdf5::h5read(h5name, "colnames")
+  rn <- rhdf5::h5read(h5name, "rownames")
+  rownames(nbeta) <- as.character(rn)
+  colnames(nbeta) <- as.character(cn)
+  gr <- gr[order(match(names(gr), rownames(nbeta)))]
+  icond <- identical(rownames(nbeta), names(gr))
+  if(!icond){stop("Problem matching gr names to h5 nbeta rows")}
+  icond <- identical(colnames(nbeta), rownames(pdata))
+  if(!icond){stop("Problem matching pdata rows to h5 nbeta cols")}
+  message("Writing new data to h5se object. This may take awhile.")
+  nbeta <- HDF5Array::HDF5Array(h5name, "noobbeta")
+  cn <- rhdf5::h5read(h5name, "colnames")
+  rn <- rhdf5::h5read(h5name, "rownames")
+  rownames(nbeta) <- as.character(rn)
+  colnames(nbeta) <- as.character(cn)
+  gmi <- minfi::GenomicRatioSet(gr = gr, Beta = nbeta, annotation = anno)
+  minfi::pData(gmi) <- pdata
+  HDF5Array::saveHDF5SummarizedExperiment(gmi, dir = newfn, replace = replaceopt)
+  message("Finished writing h5se data.")
   return(NULL)
 }
