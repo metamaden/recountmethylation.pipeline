@@ -1,11 +1,11 @@
 #!/usr/bin/env R
 
-require(rmpipeline)
-# require(recountmethylation)
-
+# Author: Sean Maden
+# 
+# Title:
 # Run the Recount Methylation Pipeline to generate data objects for the R package.
 #
-# Purpose: 
+# Purpose:
 # This script outputs versioned, timestamped database files from a set of GEO IDATs.
 # It is assumed the user has run recount-methylation-server and has a structured 
 # directory tree containing the sample IDAT files and the sample postprocessed metadata.
@@ -29,6 +29,8 @@ require(rmpipeline)
 # 2. 3 h5 files (raw red/grn signal, raw meth/unmeth signal, noob-norm beta-values)
 # 3. 3 h5se objects (raw RGChannelSet, raw MethylSet, raw RatioSet)
 
+library(rmpipeline)
+
 #------------------
 # datasets metadata
 #------------------
@@ -46,6 +48,7 @@ timestamp <- md[["timestamp"]]
 # e.g. 
 # > cd recount-methylation
 dtables_rg(versionfn, timestamp)
+
 # make the h5 file
 # navigate to compilations dir
 # e.g. 

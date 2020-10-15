@@ -1,5 +1,6 @@
 #!/usr/bin/env R
 
+# Author: Sean Maden
 # Functions for `rmpipeline` and `recountmethylation` packages.
 
 #----------
@@ -8,7 +9,7 @@
 
 #' Get list of index blocks
 #'
-#' Get list of index blocks allowing for remainders.
+#' Get list of index blocks, allowing for remainders.
 #'
 #' @param slength Total length of index vector
 #' @param bsize Size of index blocks along length
@@ -59,8 +60,10 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 
 #' Get red and grn signal data tables
 #' 
-#' Generates 2-channel signal data tables. Validates IDATs, handles new paths and data.table options,
-#'  and provides verbose input from main for loop to write data. 
+#' Generates 2-channel signal data tables. Validates IDATs, handles new paths 
+#' and data.table options, and provides verbose input from main for loop to 
+#' write data. 
+#'
 #' @param version Version of the run for data table filenames.
 #' @param timestamp NTP timestamp integer, for filenames (see get_metadata function).
 #' @param verbose Whether to return verbose notifications.
