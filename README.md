@@ -1,4 +1,7 @@
 # rmpipeline
+
+[![DOI](https://zenodo.org/badge/241738988.svg)](https://zenodo.org/badge/latestdoi/241738988)
+
 Functions and utilities for the Recount Methylation Pipeline and `recountmethylation` R package.
 
 # Install
