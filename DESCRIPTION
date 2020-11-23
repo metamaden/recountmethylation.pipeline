@@ -1,14 +1,10 @@
 Package: rmpipeline
-Title: What the Package Does (One Line, Title Case)
 Version: 0.0.1
-Authors@R: 
-    person(given = "First",
-           family = "Last",
-           role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: What license it uses
+Title: Process DNAm array IDATs into database files
+Authors@R: person(c("Sean", "K"), "Maden", role = c("cre", "aut"),
+        email = "maden@ohsu.edu", comment = c(ORCID = "0000-0002-2212-4894"))
+Description: This package processes idats into various DNAm databases   containing various types of signal data (e.g. raw red and green signals,   methylated and unmethylated signal, and noob-normalized Beta-values).
+License: Artistic-2.0
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -21,4 +17,4 @@ Imports:
 Suggests:
   knitr,
   recountmethylation
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1

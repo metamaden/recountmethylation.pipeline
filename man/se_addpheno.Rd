@@ -4,17 +4,35 @@
 \alias{se_addpheno}
 \title{Append phenotype data to a SummarizedExperiment object}
 \usage{
-se_addpheno(phenopath, se, verbose = TRUE)
+se_addpheno(phenopath, se, pdat = NULL, verbose = TRUE)
 }
 \arguments{
-\item{phenopath}{Path to properly formatted pheno data file (see details).}
+\item{verbose}{Whether to show verbose status messages (default TRUE).}
 
-\item{se}{SummarizedExperiment object.}
+\item{version}{The data file version}
 
-\item{verbose}{Whether to display status messages.}
+\item{ts}{Data file NTP timestamp (integer)}
+
+\item{dbn}{Name of h5 file to load data matrices from.}
+
+\item{fnstem}{File name stem for new H5SE file}
+
+\item{dsnv}{Vector of the data set file names to read from h5 file.}
+
+\item{dsn.md}{Name of metadata file in h5 file.}
+
+\item{addmd}{Whether to add sample metadata.}
+
+\item{mdpath}{External path to sample metadata. If FALSE, looks for dsn.md in the dbn h5 file.}
+
+\item{dsn.rnv}{Vector for rownames datasets for dsnv sets.}
+
+\item{dsn.cnv}{Vector of colnames datasets for dsnv sets.}
+
+\item{semd}{H5SE object metadata information.}
 }
 \value{
-SummarizedExperiment object with appended phenotype data.
+New H5SE object.
 }
 \description{
 Append phenotype data to a SummarizedExperiment object.

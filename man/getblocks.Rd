@@ -15,5 +15,5 @@ getblocks(slength, bsize)
 List of index blocks of min length `slength`/`bsize`
 }
 \description{
-Get list of index blocks allowing for remainders.
+Get list of index blocks, allowing for remainders.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/rmpipeline.R
 \name{h5_addtables}
 \alias{h5_addtables}
-\title{Append metadata to HDF5 or SE object}
+\title{Append data tables to HDF5 or SE object}
 \usage{
 h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
 }
