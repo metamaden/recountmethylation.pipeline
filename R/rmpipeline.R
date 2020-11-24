@@ -75,9 +75,9 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
 #' @return 
 #' @examples
-#' version = "0.0.1"
-#' timestamp = get_metadata("title", version)[["timestamp"]]
-#' dtables_rg(version = version, timestamp = timestamp)
+#' #version = "0.0.1"
+#' #timestamp = get_metadata("title", version)[["timestamp"]]
+#' #dtables_rg(version = version, timestamp = timestamp)
 #' @export
 dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
                        overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
