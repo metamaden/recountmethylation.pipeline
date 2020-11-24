@@ -6,6 +6,7 @@
 \usage{
 dt_write_rg(
   gi,
+  hlinkv,
   idatspath,
   gpath,
   reds.path,
@@ -16,8 +17,10 @@ dt_write_rg(
 )
 }
 \arguments{
-\item{gi}{Vector of valid sample basenames to read (e.g. have valid IDAT 
-pairs).}
+\item{gi}{Vector of IDAT indices to read from hlinkv.}
+
+\item{hlinkv}{Vector of GSM IDAT hlink file names, or basenames used to read
+in data.}
 
 \item{idatspath}{Path to idat files directory.}
 

@@ -5,7 +5,7 @@
 \title{Make and manage data.table files for red and grn signal}
 \usage{
 dt_makefiles(
-  gpath,
+  hlinkv,
   idatspath,
   destpath,
   version,
@@ -17,7 +17,7 @@ dt_makefiles(
 )
 }
 \arguments{
-\item{gpath}{Path to GSM IDAT files, used for basenames when reading in data.}
+\item{hlinkv}{Vector of GSM IDAT hlinks, or the basenames used to read data.}
 
 \item{idatspath}{Path to idat files to read}
 
