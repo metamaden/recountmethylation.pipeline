@@ -10,12 +10,14 @@ dt_write_rg(
   gpath,
   reds.path,
   grns.path,
+  num.assays = 1052641,
   sepval = " ",
   verbose = TRUE
 )
 }
 \arguments{
-\item{gi}{Vector of valid sample basenames to read (e.g. have valid IDAT pairs).}
+\item{gi}{Vector of valid sample basenames to read (e.g. have valid IDAT 
+pairs).}
 
 \item{idatspath}{Path to idat files directory.}
 
@@ -23,9 +25,14 @@ dt_write_rg(
 
 \item{grns.path}{Path to new grn signal data table.}
 
+\item{num.assays}{Number of assays to expect before writing (1052641 for 
+EPIC).}
+
 \item{sepval}{Separator symbol for data tables.}
 
 \item{verbose}{Whether to include verbose messages.}
+
+\item{min.cols}{Minimum data columns to write DNAm data (integer, )}
 }
 \value{
 NULL, writes data chunks as side effect

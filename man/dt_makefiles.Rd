@@ -10,6 +10,7 @@ dt_makefiles(
   destpath,
   version,
   nts,
+  min.cols = 1052641,
   overwrite = TRUE,
   fnstem = "mdat.compilation",
   sepval = " ",
@@ -27,7 +28,10 @@ dt_makefiles(
 
 \item{nts}{NTP timestamp integer, for filenames (see get_metadata function).}
 
-\item{overwrite}{Whether to overwrite existing data.table files with same destpath (default TRUE).}
+\item{min.cols}{Minimum columns to write DNAm data (integer, ).}
+
+\item{overwrite}{Whether to overwrite existing data.table files with same 
+destpath (default TRUE).}
 
 \item{fnstem}{Filename stem for data tables.}
 
@@ -36,7 +40,8 @@ dt_makefiles(
 \item{verbose}{Whether to return verbose notifications.}
 }
 \value{
-list containing dtcond (try conditions results), and new dt paths (reds.path and grns.path)
+list containing dtcond (try conditions results), and new dt paths 
+(reds.path and grns.path)
 }
 \description{
 Handles options for signal tables, returns paths used to write data chunks.

@@ -23,7 +23,8 @@ se_addpheno(phenopath, se, pdat = NULL, verbose = TRUE)
 
 \item{addmd}{Whether to add sample metadata.}
 
-\item{mdpath}{External path to sample metadata. If FALSE, looks for dsn.md in the dbn h5 file.}
+\item{mdpath}{External path to sample metadata. If FALSE, looks for dsn.md 
+in the dbn h5 file.}
 
 \item{dsn.rnv}{Vector for rownames datasets for dsnv sets.}
 
@@ -36,5 +37,6 @@ New H5SE object.
 }
 \description{
 Append phenotype data to a SummarizedExperiment object.
-Note, this data should be a data.frame with certain data specified by colnames "basename" and "gsm".
+Note, this data should be a data.frame with certain data specified by 
+colnames "basename" and "gsm".
 }

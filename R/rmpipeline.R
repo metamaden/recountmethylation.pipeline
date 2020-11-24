@@ -38,7 +38,8 @@ getblocks <- function(slength, bsize){
 #'
 #' Passes version info and timestamp from Python to object metadata
 #' @param title Object title
-#' @param version Numeric version to be passed, should conform to ##.##.## nomenclature
+#' @param version Numeric version to be passed, should conform to ##.##.## 
+#' nomenclature
 #' @param pname Name of pipeline package (default: "rmpipeline")
 #' @param sname Name of Python script (default: "get_timestamp.y")
 #' @return Metadata content for the object
@@ -89,19 +90,19 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   gpath <- idatinfo[["gpath"]]; gsmu <- idatinfo[["gsmu"]]
   if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
   gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
-  if(verbose){message("Making new data tables")}
+  if(verbose){message("Making new data tables...")}
   dtinfo <- dt_makefiles(gpath = gpath, idatspath = idatspath, 
-                         destpath = destpath, version = version, 
-                         nts = timestamp, overwrite = overwrite,
-                         verbose = verbose)
+    destpath = destpath, version = version, nts = timestamp, 
+    overwrite = overwrite, sepval = sepval, verbose = verbose)
+  if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
   dtcond <- dtinfo[["dtcond"]]
-  if(dtcond){
-    reds.path <- dtinfo[["reds.path"]]; grns.path <- dtinfo[["grns.path"]]
-    if(verbose){message("Appending new table data for ", length(gsmii)," chunks...")}
+  if(dtcond){rpath <- dtinfo[["reds.path"]]; gpath <- dtinfo[["grns.path"]]
+    if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     tt <- Sys.time()
     for(i in 1:length(gsmii)){
       dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, gpath = gpath, 
-        reds.path = reds.path, grns.path = grns.path, verbose = verbose)
+        reds.path = reds.path, grns.path = grns.path, verbose = verbose,
+        num.assays = dtinfo[["num.assays"]])
       te <- Sys.time() - tt
       if(verbose){message("Finished chunk ", i , " time elapsed: ", te)}
     }
@@ -117,23 +118,26 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' @param destpath Destination path to new signal data tables.
 #' @param version File version information for file names.
 #' @param nts NTP timestamp integer, for filenames (see get_metadata function).
-#' @param overwrite Whether to overwrite existing data.table files with same destpath (default TRUE).
+#' @param min.cols Minimum columns to write DNAm data (integer, ).
+#' @param overwrite Whether to overwrite existing data.table files with same 
+#' destpath (default TRUE).
 #' @param fnstem Filename stem for data tables.
 #' @param sepval Separator symbol for tables (" ").
 #' @param verbose Whether to return verbose notifications.
-#' @return list containing dtcond (try conditions results), and new dt paths (reds.path and grns.path)
+#' @return list containing dtcond (try conditions results), and new dt paths 
+#' (reds.path and grns.path)
 #' @export
 dt_makefiles <- function(gpath, idatspath, destpath, version, nts, 
-                         overwrite = TRUE, fnstem = "mdat.compilation",
-                         sepval = " ", verbose = TRUE){
+  min.cols = 1052641, overwrite = TRUE, fnstem = "mdat.compilation",
+  sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
   reds.fn <- paste(reds.fn, fnstem, sep = ".")
   grns.fn <- paste("greensignal", nts, version.fn, sep = "_")
   grns.fn <- paste(grns.fn, fnstem, sep = ".")
-  reds.path = paste(destpath, reds.fn, sep = "/")
-  grns.path = paste(destpath, grns.fn, sep = "/"); cn = c("gsmi")
-  rgi = minfi::read.metharray(c(paste(idatspath, gpath[1:2], sep = "/")))
+  reds.path = file.path(destpath, reds.fn)
+  grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
+  rgi = minfi::read.metharray(c(file.path(idatspath, gpath[1:2])), force = TRUE)
   rgcni = colnames(t(minfi::getRed(rgi))); rgcn = matrix(c(cn, rgcni), nrow = 1)
   if(overwrite){
     if(verbose){message("Making/verifying data tables...")}
@@ -147,7 +151,7 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
     dtcond <- dt1 == TRUE & dt1 == TRUE
   }
   lr <- list("dtcond" = dtcond, "reds.path" = reds.path, 
-    "grns.path" = grns.path)
+    "grns.path" = grns.path, "num.assays" = length(rgcn))
   return(lr)
 }
 
@@ -198,21 +202,25 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 
 #' Writes chunk of red and grn signal data
 #'
-#' @param gi Vector of valid sample basenames to read (e.g. have valid IDAT pairs).
+#' @param gi Vector of valid sample basenames to read (e.g. have valid IDAT 
+#' pairs).
 #' @param idatspath Path to idat files directory.
 #' @param reds.path Path to new red signal data table.
 #' @param grns.path Path to new grn signal data table.
+#' @param min.cols Minimum data columns to write DNAm data (integer, )
 #' @param sepval Separator symbol for data tables.
+#' @param num.assays Number of assays to expect before writing (1052641 for 
+#' EPIC).
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
 dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path, 
-                        sepval = " ", verbose = TRUE){
+  num.assays = 1052641, sepval = " ", verbose = TRUE){
   if(verbose){message("Reading in new data")}
   pathl = paste(idatspath, gpath[gi], sep = "/")
-  rgi = try(minfi::read.metharray(c(pathl)))
-  if(!class(rgi) == "RGChannelSet"){message("Problem reading chunk ", i)} else{
-    if(verbose){message("getting data matrices")}
+  rgi = try(minfi::read.metharray(c(pathl), force = TRUE))
+  cond <- nrow(rgi) == num.assays & class(rgi) == "RGChannelSet"
+  if(cond){if(verbose){message("getting data matrices")}
     redi = matrix(c(colnames(rgi), 
                     t(minfi::getRed(rgi))), ncol = nrow(rgi) + 1)
     grni = matrix(c(colnames(rgi), 
@@ -220,7 +228,7 @@ dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path,
     if(verbose){message("appending new data")}
     data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
     data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
-  }; return(NULL)
+  } else{if(verbose){message("Error with read data. Skipping...")}};return(NULL)
 }
 
 #------------------------------------
@@ -247,7 +255,7 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
                   storage.mode = "character",
                   level = 5, chunk = c(10, 16), size = 256)
   rhdf5::h5createDataset(dbn, cnn, dims = length(mmf.colnames),
-                  maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character",
+                  maxdims = c(rhdf5::H5Sunlimited()),storage.mode = "character",
                   level = 5, chunk = c(5), size = 256)
   if(verbose){message("Populating new HDF5 entities...")}
   rhdf5::h5write(mmf, file = dbn, name = dsn,
@@ -262,11 +270,13 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
 #' @param dbn Name of H5 dataset, passed from make_h5db().
-#' @param fnl List of signal data table filenames, corresponding (1:1) to names for new h5 datasets in dsnl.
+#' @param fnl List of signal data table filenames, corresponding (1:1) to names 
+#' for new h5 datasets in dsnl.
 #' @param fnpath Path to signal data tables.
 #' @param dsnl List of data set names in HDF5 database to be populated.
 #' @param rmax Total rows to append to data sets, reflecting total samples.
-#' @param cmax Total columns to append to data sets, reflecting total assays or probes.
+#' @param cmax Total columns to append to data sets, reflecting total assays or 
+#' probes.
 #' @param verbose Whether to print verbose progress messages.
 #' @param nr.inc Number of samples to append at a time (default: 10).
 #' @return Populates the HDF5 database
@@ -318,20 +328,26 @@ h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
 #' Make and populate a new HDF5 database with red and green signal, and metadata
 #'
 #' Add signal data (red and green channel) to the HDF5 database.
-#' @param dbfnstem Stem of filename for h5 database (to which ts and version appended)
+#' @param dbfnstem Stem of filename for h5 database (to which ts and version 
+#' appended)
 #' @param version Version of new database file.
 #' @param ts Timestamp of new database file.
 #' @param fnl Vector of signal tables containing data to be added.
 #' @param fnpath Path to dir containing files in fnl.
 #' @param dsnl Vector of data set names in HDF5 database to be populated.
 #' @param rmax Total rows to append to data sets, reflecting total samples.
-#' @param cmax Total columns to append to data sets, reflecting total assays or probes. Should be 622399 for raw red/grn signal.
-#' @param newtables Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).
+#' @param cmax Total columns to append to data sets, reflecting total assays or 
+#' probes. Should be 622399 for raw red/grn signal.
+#' @param newtables Whether to also add new data tables (noob-norm. Beta-values, 
+#' meth. and unmeth. signal).
 #' @param mdpath If addmd, the path to the metadata file to load.
-#' @param nr.inc Number of samples to append at a time (default: 10, passed to `h5_addtables()`).
-#' @param ngsm.block Number of GSMs (samples) per process block (default 50, passed to `h5_newtables()`).
+#' @param nr.inc Number of samples to append at a time (default: 10, passed to 
+#' `h5_addtables()`).
+#' @param ngsm.block Number of GSMs (samples) per process block (default 50, 
+#' passed to `h5_newtables()`).
 #' @param verbose Whether to show verbose status updates.
-#' @param dsnl Vector of new h5 data set objects in the h5db object, corresponding (1:1) to the files declared in fnl.
+#' @param dsnl Vector of new h5 data set objects in the h5db object, 
+#' corresponding (1:1) to the files declared in fnl.
 #' @return Populates the HDF5 database
 #' @export
 makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
@@ -377,7 +393,8 @@ makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
 #' Retrieves sample metadata from an HDF5 database.
 #'
 #' @param dbn Path to HDF5 database file.
-#' @param dsn Name or group path to HDF5 dataset containing postprocessed metadata.
+#' @param dsn Name or group path to HDF5 dataset containing postprocessed 
+#' metadata.
 #' @return Postprocessed metadata as a `data.frame`.
 #' @export
 data_mdpost = function(dbn, dsn){
@@ -389,7 +406,8 @@ data_mdpost = function(dbn, dsn){
 #' Append phenotype data to a SummarizedExperiment object
 #'
 #' Append phenotype data to a SummarizedExperiment object.
-#' Note, this data should be a data.frame with certain data specified by colnames "basename" and "gsm".
+#' Note, this data should be a data.frame with certain data specified by 
+#' colnames "basename" and "gsm".
 #'
 #' @param version The data file version
 #' @param ts Data file NTP timestamp (integer)
@@ -399,7 +417,8 @@ data_mdpost = function(dbn, dsn){
 #' @param dsn.md Name of metadata file in h5 file.
 #' @param verbose Whether to show verbose status messages (default TRUE).
 #' @param addmd Whether to add sample metadata.
-#' @param mdpath External path to sample metadata. If FALSE, looks for dsn.md in the dbn h5 file.
+#' @param mdpath External path to sample metadata. If FALSE, looks for dsn.md 
+#' in the dbn h5 file.
 #' @param dsn.rnv Vector for rownames datasets for dsnv sets.
 #' @param dsn.cnv Vector of colnames datasets for dsnv sets.
 #' @param semd H5SE object metadata information.

@@ -9,7 +9,8 @@ get_metadata(title, version, pname = "rmpipeline", sname = "get_timestamp.py")
 \arguments{
 \item{title}{Object title}
 
-\item{version}{Numeric version to be passed, should conform to ##.##.## nomenclature}
+\item{version}{Numeric version to be passed, should conform to ##.##.## 
+nomenclature}
 
 \item{pname}{Name of pipeline package (default: "rmpipeline")}
 

@@ -22,7 +22,8 @@ makeh5db_rg(
 )
 }
 \arguments{
-\item{dbfnstem}{Stem of filename for h5 database (to which ts and version appended)}
+\item{dbfnstem}{Stem of filename for h5 database (to which ts and version 
+appended)}
 
 \item{version}{Version of new database file.}
 
@@ -34,19 +35,24 @@ makeh5db_rg(
 
 \item{rmax}{Total rows to append to data sets, reflecting total samples.}
 
-\item{cmax}{Total columns to append to data sets, reflecting total assays or probes. Should be 622399 for raw red/grn signal.}
+\item{cmax}{Total columns to append to data sets, reflecting total assays or 
+probes. Should be 622399 for raw red/grn signal.}
 
-\item{newtables}{Whether to also add new data tables (noob-norm. Beta-values, meth. and unmeth. signal).}
+\item{newtables}{Whether to also add new data tables (noob-norm. Beta-values, 
+meth. and unmeth. signal).}
 
 \item{mdpath}{If addmd, the path to the metadata file to load.}
 
-\item{nr.inc}{Number of samples to append at a time (default: 10, passed to `h5_addtables()`).}
+\item{nr.inc}{Number of samples to append at a time (default: 10, passed to 
+`h5_addtables()`).}
 
-\item{ngsm.block}{Number of GSMs (samples) per process block (default 50, passed to `h5_newtables()`).}
+\item{ngsm.block}{Number of GSMs (samples) per process block (default 50, 
+passed to `h5_newtables()`).}
 
 \item{verbose}{Whether to show verbose status updates.}
 
-\item{dsnl}{Vector of new h5 data set objects in the h5db object, corresponding (1:1) to the files declared in fnl.}
+\item{dsnl}{Vector of new h5 data set objects in the h5db object, 
+corresponding (1:1) to the files declared in fnl.}
 }
 \value{
 Populates the HDF5 database

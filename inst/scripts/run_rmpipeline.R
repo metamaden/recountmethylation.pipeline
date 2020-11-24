@@ -46,7 +46,8 @@ versionfn <- md[["version"]]; timestamp <- md[["timestamp"]]
 # navigate to main recount-methylation dir/base dir.
 # e.g. 
 # > cd recount-methylation
-dtables_rg(versionfn, timestamp)
+dtables_rg(versionfn, timestamp, destpath = "compilations", 
+    num.assays = 1052641)
 
 # make the h5 file
 # navigate to compilations dir

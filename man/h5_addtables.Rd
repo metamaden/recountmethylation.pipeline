@@ -9,7 +9,8 @@ h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
 \arguments{
 \item{dbn}{Name of H5 dataset, passed from make_h5db().}
 
-\item{fnl}{List of signal data table filenames, corresponding (1:1) to names for new h5 datasets in dsnl.}
+\item{fnl}{List of signal data table filenames, corresponding (1:1) to names 
+for new h5 datasets in dsnl.}
 
 \item{fnpath}{Path to signal data tables.}
 
@@ -17,7 +18,8 @@ h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
 
 \item{rmax}{Total rows to append to data sets, reflecting total samples.}
 
-\item{cmax}{Total columns to append to data sets, reflecting total assays or probes.}
+\item{cmax}{Total columns to append to data sets, reflecting total assays or 
+probes.}
 
 \item{verbose}{Whether to print verbose progress messages.}
 

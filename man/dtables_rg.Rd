@@ -45,7 +45,7 @@ and data.table options, and provides verbose input from main for loop to
 write data.
 }
 \examples{
-version = "0.0.1"
-timestamp = get_metadata("title", version)[["timestamp"]]
-dtables_rg(version = version, timestamp = timestamp)
+#version = "0.0.1"
+#timestamp = get_metadata("title", version)[["timestamp"]]
+#dtables_rg(version = version, timestamp = timestamp)
 }
