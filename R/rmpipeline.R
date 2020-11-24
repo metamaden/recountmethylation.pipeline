@@ -99,8 +99,9 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     tt <- Sys.time()
     for(i in 1:length(gsmii)){
-      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, reds.path = red.path, 
-        grns.path = grn.path, verbose = verbose, num.assays = num.assays)
+      dt_write_rg(gi = gsmii[[i]], hlinkv = hlinkv, idatspath = idatspath, 
+        reds.path = red.path, grns.path = grn.path, verbose = verbose, 
+        num.assays = num.assays)
       if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
     }
   } else{stop("Problem encountered handling data tables.")}
