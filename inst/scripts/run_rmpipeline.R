@@ -40,6 +40,10 @@ newversion <- "0.0.2"
 md <- get_metadata(title = "newrun", version = newversion)
 versionfn <- md[["version"]]; timestamp <- md[["timestamp"]]
 
+
+idats.path <- file.path("recount-methylation-files", "idats")
+idatsv <- dt_checkidat(idatspath=idats.path, verbose = TRUE)
+
 #----------------------
 # red/grn signal data
 #----------------------

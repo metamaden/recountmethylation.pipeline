@@ -112,7 +112,7 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' Make and manage data.table files for red and grn signal
 #'
 #' Handles options for signal tables, returns paths used to write data chunks.
-#' @param gpath Path to GSM IDAT files, used for basenames when reading in data.
+#' @param hlinkv Vector of GSM IDAT hlinks, or the basenames used to read data.
 #' @param idatspath Path to idat files to read
 #' @param destpath Destination path to new signal data tables.
 #' @param version File version information for file names.
@@ -125,7 +125,7 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' @return list containing dtcond (try conditions results), and new dt paths 
 #' (reds.path and grns.path)
 #' @export
-dt_makefiles <- function(gpath, idatspath, destpath, version, nts, 
+dt_makefiles <- function(hlinkv, idatspath, destpath, version, nts, 
   overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
@@ -134,7 +134,7 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
   grns.fn <- paste(grns.fn, fnstem, sep = ".")
   reds.path = file.path(destpath, reds.fn)
   grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
-  rgi = minfi::read.metharray(c(file.path(idatspath, gpath[1:2])), force = TRUE)
+  rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])), force = TRUE)
   rgcni = colnames(t(minfi::getRed(rgi))); rgcn = matrix(c(cn, rgcni), nrow = 1)
   if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
@@ -197,8 +197,9 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 
 #' Writes chunk of red and grn signal data
 #'
-#' @param gi Vector of valid sample basenames to read (e.g. have valid IDAT 
-#' pairs).
+#' @param gi Vector of IDAT indices to read from hlinkv.
+#' @param hlinkv Vector of GSM IDAT hlink file names, or basenames used to read
+#' in data.
 #' @param idatspath Path to idat files directory.
 #' @param reds.path Path to new red signal data table.
 #' @param grns.path Path to new grn signal data table.
@@ -209,9 +210,9 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
-dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path, 
+dt_write_rg <- function(gi, hlinkv, idatspath, gpath, reds.path, grns.path, 
   num.assays = 1052641, sepval = " ", verbose = TRUE){
-  if(verbose){message("Reading data...")}; pathl=file.path(idatspath, gpath[gi])
+  if(verbose){message("Reading data...")};pathl=file.path(idatspath, hlinkv[gi])
   upathl <- unique(pathl); rgi = try(minfi::read.metharray(upathl,force = TRUE))
   cond <- nrow(rgi) == num.assays & class(rgi) == "RGChannelSet"
   if(cond){if(verbose){message("getting data matrices")}
