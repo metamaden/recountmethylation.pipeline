@@ -146,7 +146,7 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
     dtcond <- dt1 == TRUE & dt1 == TRUE
   }
   lr <- list("dtcond" = dtcond, "reds.path" = reds.path, 
-    "grns.path" = grns.path, "num.assays" = length(rgcn))
+    "grns.path" = grns.path, "num.assays" = nrow(rgi))
   return(lr)
 }
 
