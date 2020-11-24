@@ -2,15 +2,17 @@
 % Please edit documentation in R/rmpipeline.R
 \name{dt_checkidat}
 \alias{dt_checkidat}
-\title{Validate idats at path, returns gsmu and gpath}
+\title{Validate idats at path, returns gsmu and hlinkv}
 \usage{
 dt_checkidat(idatspath, verbose = TRUE)
 }
 \arguments{
-\item{idatspath}{Path to idat files to read}
+\item{idatspath}{File path to directory containing IDATs.}
+
+\item{verbose}{Whether to return status messages (boolean, TRUE).}
 }
 \value{
-list containing gsmu and gpath
+list containing gsmu and hlinkv
 }
 \description{
 Checks for valid idat file pairs, checks for latest timestamps, 

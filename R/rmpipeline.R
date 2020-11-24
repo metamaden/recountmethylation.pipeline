@@ -85,25 +85,23 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   idatspath = file.path("recount-methylation-files", "idats"),
   destpath = file.path("recount-methylation-analysis",
     "files", "mdata", "compilations")){
-  # get valid gsms idats dir
   idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
-  gpath <- idatinfo[["gpath"]]; gsmu <- idatinfo[["gsmu"]]
+  hlinkv <- idatinfo[["hlinkv"]]; gsmu <- idatinfo[["gsmu"]]
   if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
   gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
   if(verbose){message("Making new data tables...")}
-  dtinfo <- dt_makefiles(gpath = gpath, idatspath = idatspath, 
+  dtinfo <- dt_makefiles(hlinkv = hlinkv, idatspath = idatspath, 
     destpath = destpath, version = version, nts = timestamp, 
     overwrite = overwrite, sepval = sepval, verbose = verbose)
   if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
   dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
-  if(dtcond){rpath <- dtinfo[["reds.path"]]; gpath <- dtinfo[["grns.path"]]
+  if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     tt <- Sys.time()
     for(i in 1:length(gsmii)){
-      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, gpath = gpath, 
-        reds.path = reds.path, grns.path = grns.path, verbose = verbose,
-        num.assays = num.assays); te <- Sys.time() - tt
-      if(verbose){message("Finished chunk ", i , " time elapsed: ", te)}
+      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, reds.path = red.path, 
+        grns.path = grn.path, verbose = verbose, num.assays = num.assays)
+      if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
     }
   } else{stop("Problem encountered handling data tables.")}
   if(verbose){message("Successfully completed data tables.")}; return(NULL)
@@ -150,13 +148,14 @@ dt_makefiles <- function(hlinkv, idatspath, destpath, version, nts,
   return(lr)
 }
 
-#' Validate idats at path, returns gsmu and gpath
+#' Validate idats at path, returns gsmu and hlinkv
 #' 
 #' Checks for valid idat file pairs, checks for latest timestamps, 
 #' files with matching timestamps, and valid red/grn IDAT file pairs, 
 #' gets valid gsms idats dir.
-#' @param idatspath Path to idat files to read
-#' @return list containing gsmu and gpath
+#' @param idatspath File path to directory containing IDATs.
+#' @param verbose Whether to return status messages (boolean, TRUE).
+#' @return list containing gsmu and hlinkv
 #' @export
 dt_checkidat <- function(idatspath, verbose = TRUE){
   if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
@@ -191,8 +190,8 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
     if(verbose){message("Appending new fn")}; gpath.ts <- c(gpath.ts, gpathf)
     if(verbose){message("remaking gid list")}
     gpath.gid <- gsub("\\..*", "", gpath.ts)
-  }; gpath <- gpath.ts; gsmu <- gsub("\\..*", "", gpath)
-  lr <- list("gsmu" = gsmu, "gpath" = gpath); return(lr)
+  }; hlinkv <- gpath.ts; gsmu <- gsub("\\..*", "", hlinkv)
+  lr <- list("gsmu" = gsmu, "hlinkv" = hlinkv); return(lr)
 }
 
 #' Writes chunk of red and grn signal data
@@ -210,7 +209,7 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
-dt_write_rg <- function(gi, hlinkv, idatspath, gpath, reds.path, grns.path, 
+dt_write_rg <- function(gi, hlinkv, idatspath, reds.path, grns.path, 
   num.assays = 1052641, sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};pathl=file.path(idatspath, hlinkv[gi])
   upathl <- unique(pathl); rgi = try(minfi::read.metharray(upathl,force = TRUE))

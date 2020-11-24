@@ -8,7 +8,6 @@ dt_write_rg(
   gi,
   hlinkv,
   idatspath,
-  gpath,
   reds.path,
   grns.path,
   num.assays = 1052641,
