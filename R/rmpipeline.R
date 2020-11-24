@@ -211,9 +211,8 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @export
 dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path, 
   num.assays = 1052641, sepval = " ", verbose = TRUE){
-  if(verbose){message("Reading in new data")}
-  pathl = paste(idatspath, gpath[gi], sep = "/")
-  rgi = try(minfi::read.metharray(c(pathl), force = TRUE))
+  if(verbose){message("Reading data...")}; pathl=file.path(idatspath, gpath[gi])
+  upathl <- unique(pathl); rgi = try(minfi::read.metharray(upathl,force = TRUE))
   cond <- nrow(rgi) == num.assays & class(rgi) == "RGChannelSet"
   if(cond){if(verbose){message("getting data matrices")}
     redi = matrix(c(colnames(rgi), 
@@ -223,7 +222,7 @@ dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path,
     if(verbose){message("appending new data")}
     data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
     data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
-  } else{if(verbose){message("Error with read data. Skipping...")}};return(NULL)
+  } else{if(verbose){message("Error reading data. Skipping...")}}; return(NULL)
 }
 
 #------------------------------------
