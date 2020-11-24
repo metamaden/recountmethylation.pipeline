@@ -10,7 +10,6 @@ dt_makefiles(
   destpath,
   version,
   nts,
-  min.cols = 1052641,
   overwrite = TRUE,
   fnstem = "mdat.compilation",
   sepval = " ",
@@ -27,8 +26,6 @@ dt_makefiles(
 \item{version}{File version information for file names.}
 
 \item{nts}{NTP timestamp integer, for filenames (see get_metadata function).}
-
-\item{min.cols}{Minimum columns to write DNAm data (integer, ).}
 
 \item{overwrite}{Whether to overwrite existing data.table files with same 
 destpath (default TRUE).}

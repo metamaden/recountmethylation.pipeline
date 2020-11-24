@@ -81,10 +81,10 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' #dtables_rg(version = version, timestamp = timestamp)
 #' @export
 dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
-                       overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
-                       idatspath = file.path("recount-methylation-files", "idats"),
-                       destpath = file.path("recount-methylation-analysis",
-                        "files", "mdata", "compilations")){
+  overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
+  idatspath = file.path("recount-methylation-files", "idats"),
+  destpath = file.path("recount-methylation-analysis",
+    "files", "mdata", "compilations")){
   # get valid gsms idats dir
   idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
   gpath <- idatinfo[["gpath"]]; gsmu <- idatinfo[["gsmu"]]
@@ -95,15 +95,14 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
     destpath = destpath, version = version, nts = timestamp, 
     overwrite = overwrite, sepval = sepval, verbose = verbose)
   if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
-  dtcond <- dtinfo[["dtcond"]]
+  dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
   if(dtcond){rpath <- dtinfo[["reds.path"]]; gpath <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     tt <- Sys.time()
     for(i in 1:length(gsmii)){
       dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, gpath = gpath, 
         reds.path = reds.path, grns.path = grns.path, verbose = verbose,
-        num.assays = dtinfo[["num.assays"]])
-      te <- Sys.time() - tt
+        num.assays = num.assays); te <- Sys.time() - tt
       if(verbose){message("Finished chunk ", i , " time elapsed: ", te)}
     }
   } else{stop("Problem encountered handling data tables.")}
@@ -118,7 +117,6 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' @param destpath Destination path to new signal data tables.
 #' @param version File version information for file names.
 #' @param nts NTP timestamp integer, for filenames (see get_metadata function).
-#' @param min.cols Minimum columns to write DNAm data (integer, ).
 #' @param overwrite Whether to overwrite existing data.table files with same 
 #' destpath (default TRUE).
 #' @param fnstem Filename stem for data tables.
@@ -128,8 +126,7 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' (reds.path and grns.path)
 #' @export
 dt_makefiles <- function(gpath, idatspath, destpath, version, nts, 
-  min.cols = 1052641, overwrite = TRUE, fnstem = "mdat.compilation",
-  sepval = " ", verbose = TRUE){
+  overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
   reds.fn <- paste(reds.fn, fnstem, sep = ".")
@@ -139,15 +136,13 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
   grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
   rgi = minfi::read.metharray(c(file.path(idatspath, gpath[1:2])), force = TRUE)
   rgcni = colnames(t(minfi::getRed(rgi))); rgcn = matrix(c(cn, rgcni), nrow = 1)
-  if(overwrite){
-    if(verbose){message("Making/verifying data tables...")}
+  if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
                                   append = FALSE, col.names = F))
     dt2 <- try(data.table::fwrite(rgcn, grns.path, sep = sepval, 
                                   append = FALSE, col.names = F))
     dtcond <- is.null(dt1) & is.null(dt2)
-  } else{
-    dt1 <- try(file.exists(reds.path)); dt2 <- try(file.exists(grns.path))
+  } else{dt1 <- try(file.exists(reds.path)); dt2 <- try(file.exists(grns.path))
     dtcond <- dt1 == TRUE & dt1 == TRUE
   }
   lr <- list("dtcond" = dtcond, "reds.path" = reds.path, 
