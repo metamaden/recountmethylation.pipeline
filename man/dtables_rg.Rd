@@ -12,9 +12,9 @@ dtables_rg(
   overwrite = TRUE,
   fnstem = "mdat.compilation",
   sepval = " ",
-  idatspath = paste("recount-methylation-files", "idats", sep = "/"),
-  destpath = paste("recount-methylation-analysis", "files", "mdata", "compilations",
-    sep = "/")
+  idatspath = file.path("recount-methylation-files", "idats"),
+  destpath = file.path("recount-methylation-analysis", "files", "mdata",
+    "compilations")
 )
 }
 \arguments{

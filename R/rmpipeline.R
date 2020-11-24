@@ -81,13 +81,12 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' @export
 dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
                        overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
-                       idatspath = paste("recount-methylation-files", "idats", sep = "/"),
-                       destpath = paste("recount-methylation-analysis",
-                                        "files", "mdata", "compilations", sep = "/")){
+                       idatspath = file.path("recount-methylation-files", "idats"),
+                       destpath = file.path("recount-methylation-analysis",
+                        "files", "mdata", "compilations")){
   # get valid gsms idats dir
   idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
-  gpath <- idatinfo[["gpath"]]
-  gsmu <- idatinfo[["gsmu"]]
+  gpath <- idatinfo[["gpath"]]; gsmu <- idatinfo[["gsmu"]]
   if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
   gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
   if(verbose){message("Making new data tables")}
@@ -97,20 +96,17 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
                          verbose = verbose)
   dtcond <- dtinfo[["dtcond"]]
   if(dtcond){
-    reds.path <- dtinfo[["reds.path"]]
-    grns.path <- dtinfo[["grns.path"]]
+    reds.path <- dtinfo[["reds.path"]]; grns.path <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new table data for ", length(gsmii)," chunks...")}
     tt <- Sys.time()
     for(i in 1:length(gsmii)){
-      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath,
-                  gpath = gpath, reds.path = reds.path,
-                  grns.path = grns.path, verbose = verbose)
+      dt_write_rg(gi = gsmii[[i]], idatspath = idatspath, gpath = gpath, 
+        reds.path = reds.path, grns.path = grns.path, verbose = verbose)
       te <- Sys.time() - tt
       if(verbose){message("Finished chunk ", i , " time elapsed: ", te)}
     }
   } else{stop("Problem encountered handling data tables.")}
-  if(verbose){message("Successfully completed data tables.")}
-  return(NULL)
+  if(verbose){message("Successfully completed data tables.")}; return(NULL)
 }
 
 #' Make and manage data.table files for red and grn signal
@@ -123,23 +119,22 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' @param nts NTP timestamp integer, for filenames (see get_metadata function).
 #' @param overwrite Whether to overwrite existing data.table files with same destpath (default TRUE).
 #' @param fnstem Filename stem for data tables.
+#' @param sepval Separator symbol for tables (" ").
 #' @param verbose Whether to return verbose notifications.
 #' @return list containing dtcond (try conditions results), and new dt paths (reds.path and grns.path)
 #' @export
 dt_makefiles <- function(gpath, idatspath, destpath, version, nts, 
                          overwrite = TRUE, fnstem = "mdat.compilation",
-                         verbose = TRUE){
+                         sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
   reds.fn <- paste(reds.fn, fnstem, sep = ".")
   grns.fn <- paste("greensignal", nts, version.fn, sep = "_")
   grns.fn <- paste(grns.fn, fnstem, sep = ".")
   reds.path = paste(destpath, reds.fn, sep = "/")
-  grns.path = paste(destpath, grns.fn, sep = "/")
-  cn = c("gsmi")
+  grns.path = paste(destpath, grns.fn, sep = "/"); cn = c("gsmi")
   rgi = minfi::read.metharray(c(paste(idatspath, gpath[1:2], sep = "/")))
-  rgcni = colnames(t(minfi::getRed(rgi))) # cgids as colnames
-  rgcn = matrix(c(cn, rgcni), nrow = 1)
+  rgcni = colnames(t(minfi::getRed(rgi))); rgcn = matrix(c(cn, rgcni), nrow = 1)
   if(overwrite){
     if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
@@ -148,13 +143,11 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
                                   append = FALSE, col.names = F))
     dtcond <- is.null(dt1) & is.null(dt2)
   } else{
-    dt1 <- try(file.exists(reds.path))
-    dt2 <- try(file.exists(grns.path))
+    dt1 <- try(file.exists(reds.path)); dt2 <- try(file.exists(grns.path))
     dtcond <- dt1 == TRUE & dt1 == TRUE
   }
-  lr <- list("dtcond" = dtcond,
-             "reds.path" = reds.path,
-             "grns.path" = grns.path)
+  lr <- list("dtcond" = dtcond, "reds.path" = reds.path, 
+    "grns.path" = grns.path)
   return(lr)
 }
 
@@ -169,17 +162,13 @@ dt_makefiles <- function(gpath, idatspath, destpath, version, nts,
 dt_checkidat <- function(idatspath, verbose = TRUE){
   if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
   idats.lf = list.files(idatspath)
-  which.valid1 = grepl("\\.idat$", substr(idats.lf,
-                                          nchar(idats.lf) - 4,
+  which.valid1 = grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4,
                                           nchar(idats.lf))) # idat ext
   which.valid2 = grepl(".*hlink.*", idats.lf) # hlink
-  # timestamp
   which.valid3 = length(gsub("\\..*", "", gsub(".*\\.", "", idats.lf))) > 0 
   idats.valid = idats.lf[which.valid1 & which.valid2 & which.valid3]
-  gsmu = gsub("\\..*", "", idats.valid)
-  gsmu = gsmu[grepl("^GSM.*", gsmu)]
+  gsmu = gsub("\\..*", "", idats.valid); gsmu = gsmu[grepl("^GSM.*", gsmu)]
   gsmu = unique(gsmu)
-  # red/grn channel files
   if(verbose){message("Finding paired red and grn channel files...")}
   gstr <- gsub(".*hlink\\.", "", gsub("(_Red.idat$|_Grn.idat$)", "", idats.valid))
   rsub <- idats.valid[grepl(".*_Red.idat$", idats.valid)]
@@ -189,29 +178,22 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
                        gsub(".*hlink\\.", "", gsub("_Grn.idat$", "", gsub)))
   idats.validf <- idats.valid[gstr %in% gstr.rg]
   gpath <- unique(gsub("(_Red.idat|_Grn.idat)", "", idats.validf))
-  # filter on timestamps
   if(verbose){message("Filtering files on latest timestamps...")}
   gpath.ts <- c()
   gpath.gid <- c()
   gidv <- gsub("\\..*", "", gpath)
   tidv <- gsub(".*\\.", "", gsub("\\.hlink.*", "", gpath))
-  # iterate on timestamps
-  tsu <- unique(tidv)
-  tsu <- tsu[rev(order(tsu))] # sort so that latest comes first
+  tsu <- unique(tidv); tsu <- tsu[rev(order(tsu))] # iterate on timestamps
   for(t in tsu){
     gpathf <- gpath[tidv == t & !gidv %in% gpath.gid]
     if(verbose){message("Removing redundant gsm ids in this iter")}
     gpathf.gid <- gsub("\\..*", "", gpathf)
     gpathf <- gpathf[!duplicated(gpathf.gid)]
-    if(verbose){message("Appending new fn")}
-    gpath.ts <- c(gpath.ts, gpathf)
+    if(verbose){message("Appending new fn")}; gpath.ts <- c(gpath.ts, gpathf)
     if(verbose){message("remaking gid list")}
     gpath.gid <- gsub("\\..*", "", gpath.ts)
-  }
-  gpath <- gpath.ts
-  gsmu <- gsub("\\..*", "", gpath)
-  lr <- list("gsmu" = gsmu, "gpath" = gpath)
-  return(lr)
+  }; gpath <- gpath.ts; gsmu <- gsub("\\..*", "", gpath)
+  lr <- list("gsmu" = gsmu, "gpath" = gpath); return(lr)
 }
 
 #' Writes chunk of red and grn signal data
@@ -229,9 +211,7 @@ dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path,
   if(verbose){message("Reading in new data")}
   pathl = paste(idatspath, gpath[gi], sep = "/")
   rgi = try(minfi::read.metharray(c(pathl)))
-  if(!class(rgi) == "RGChannelSet"){
-    message("There was a problem reading data chunk num. ", i)
-  } else{
+  if(!class(rgi) == "RGChannelSet"){message("Problem reading chunk ", i)} else{
     if(verbose){message("getting data matrices")}
     redi = matrix(c(colnames(rgi), 
                     t(minfi::getRed(rgi))), ncol = nrow(rgi) + 1)
@@ -240,8 +220,7 @@ dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path,
     if(verbose){message("appending new data")}
     data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
     data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
-  }
-  return(NULL)
+  }; return(NULL)
 }
 
 #------------------------------------
@@ -258,17 +237,10 @@ dt_write_rg <- function(gi, idatspath, gpath, reds.path, grns.path,
 #' @return Adds metadata table and colnames object to HDF5 database
 #' @export
 h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
-  # name of new colnames entity
   cnn = paste(dsn, "colnames", sep = ".")
-  # read in data
   if(verbose){message("Reading in sample metadata from file: ", mdpath)}
-  mdt <- get(load(mdpath))
-  # format data
-  if(verbose){message("Formatting sample metadata...")}
-  mmf = as.matrix(mdt)
-  class(mmf) = "character"
-  mmf.colnames = colnames(mmf)
-  # instantiate new entities in db
+  mdt <- get(load(mdpath)); if(verbose){message("Formatting metadata...")}
+  mmf = as.matrix(mdt); class(mmf) = "character"; mmf.colnames = colnames(mmf)
   if(verbose){message("Making new entities for HDF5 db...")}
   rhdf5::h5createDataset(dbn, dsn, dims = c(nrow(mmf), ncol(mmf)),
                   maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
@@ -277,14 +249,12 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
   rhdf5::h5createDataset(dbn, cnn, dims = length(mmf.colnames),
                   maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character",
                   level = 5, chunk = c(5), size = 256)
-  # write new data
   if(verbose){message("Populating new HDF5 entities...")}
   rhdf5::h5write(mmf, file = dbn, name = dsn,
           index = list(1:nrow(mmf), 1:ncol(mmf)))
   rhdf5::h5write(mmf.colnames, file = dbn, name = cnn,
           index = list(1:length(mmf.colnames)))
-  if(verbose){message("Finished adding metadata to HDF5 db.")}
-  rhdf5::h5closeAll() # close open connections to db
+  if(verbose){message("Finished adding metadata.")}; rhdf5::h5closeAll()
   return(NULL)
 }
 
@@ -304,65 +274,45 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
                     verbose = TRUE, nr.inc = 10){
   for(di in 1:length(dsnl)){
-    fnread = fnl[di]; dsn = dsnl[di]
+    fnread = fnl[di]; dsn = dsnl[di]; tt <- Sys.time()
     rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax),
                            maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                            storage.mode = "double", level = 5, chunk = c(1, 5))
-    rn = cn = c()
-    con <- file(paste(fnpath, fnread, sep = "/"), "r") # make new connection object
-    cn = unlist(strsplit(readLines(con, n = 1), " ")) # read first line (colnames)
-    cn = cn[2:length(cn)] # filt first value
-    cn = gsub("\n", "",gsub('\"', '', cn[1:cmax])) # grab the max indexed value
-    nri = getblocks(rmax, nr.inc)
-    tt <- Sys.time()
-    for(ni in nri){
-      i = ni[1]
-      # read new lines; note this is contextual/resumes at next new line each iter
-      dati = unlist(strsplit(readLines(con, n = length(ni)), " "))
-      wdi = which(grepl(".*GSM.*", dati))
-      dff = matrix(nrow = 0, ncol = cmax)
-      # get stripped GSM IDs from rownames (first col each line)
-      ngsm = gsub("\n", "",
-                  gsub('\"', '',
-                       gsub("\\..*", "", dati[wdi])))
-      wgsm = c() # new gsm ids to write
+    rn = cn = c(); con <- file(paste(fnpath, fnread, sep = "/"), "r")
+    cn = unlist(strsplit(readLines(con, n = 1), " ")); cn = cn[2:length(cn)]
+    cn = gsub("\n", "",gsub('\"', '', cn[1:cmax]));nri = getblocks(rmax, nr.inc)
+    for(ni in nri){wgsm = c()
+      i = ni[1]; dati = unlist(strsplit(readLines(con, n = length(ni)), " "))
+      wdi = which(grepl(".*GSM.*", dati)); dff = matrix(nrow = 0, ncol = cmax)
+      ngsm = gsub("\n", "", gsub('\"', '', gsub("\\..*", "", dati[wdi])))
       for(wi in 1:length(wdi)){
-        # filter redundant gsm ids
-        if(!ngsm[wi] %in% rn){
-          wadd = wdi[wi] + 1
-          dff = rbind(dff,
-                      matrix(dati[wadd:(wadd + cmax - 1)],
-                             nrow = 1))
+        if(!ngsm[wi] %in% rn){wadd = wdi[wi] + 1
+          dff = rbind(dff, matrix(dati[wadd:(wadd + cmax - 1)], nrow = 1))
           wgsm = c(wgsm, ngsm[wi])
         }
-      }
-      rn = c(rn, wgsm) # gsm ids for new data
-      class(dff) = "numeric"
+      }; rn = c(rn, wgsm); class(dff) = "numeric"
       rhdf5::h5write(dff, file = dbn, name = dsn,
                      index = list(ni[1]:ni[length(ni)], 1:cmax))
       rhdf5::h5closeAll()
       message("For ds ", dsn,", finished reading index ", i,
-              " to ", ni[length(ni)],
-              ", time; ", Sys.time() - tt)
+              " to ", ni[length(ni)], ", time; ", Sys.time() - tt)
     }
     message("Adding row and column names for ds ", dsn)
     cnn = paste0(dsn, ".colnames"); rnn = paste0(dsn, ".rownames");
     rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(rhdf5::H5Sunlimited()),
                            storage.mode = "character", level = 5, # compression level, 1-9
                            chunk = c(20), size = 256) # chunk dims
-    message("Added colnames...")
+    message("Added colnames.")
     rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(rhdf5::H5Sunlimited()),
                            storage.mode = "character", level = 5, # compression level, 1-9
                            chunk = c(20), size = 256) # chunk dims
-    message("Added rownames...")
+    message("Added rownames.")
     rhdf5::h5write(cn, file = dbn, name = cnn, index = list(1:length(cn)))
     rhdf5::h5write(rn, file = dbn, name = rnn, index = list(1:length(rn)))
-    rhdf5::h5closeAll()
-    message("Completed writing data, rownames, colnames for ds, ", dsn)
+    rhdf5::h5closeAll(); message("Completed writing data for ds, ", dsn)
   }
   if(verbose){message("Finished adding red and green channel data sets.")}
-  rhdf5::h5closeAll() # close open connections to db
-  return(NULL)
+  rhdf5::h5closeAll(); return(NULL)
 }
 
 #' Make and populate a new HDF5 database with red and green signal, and metadata
@@ -389,19 +339,16 @@ makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
                       rmoldh5 = TRUE, newtables = FALSE, mdpath = NULL,
                       nr.inc = 10, ngsm.block = 50, verbose = TRUE,
                       dsnl = c("redsignal", "greensignal", "mdpost")){
-  require(rhdf5)
-  # make new h5 db filename
-  fn <- paste(dbfnstem, ts, gsub("\\.", "-", version), sep = "_")
+  require(rhdf5);fn <- paste(dbfnstem, ts, gsub("\\.", "-", version), sep = "_")
   dbn <- paste(fn, "h5", sep = ".")
   if(verbose){message("Making new h5 db file: ", dbn)}
   suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
-  # remove old data, if present
-  if(rmoldh5){
-    if(verbose){message("Removing old data...")}
-    for(d in dsnl){
-      suppressMessages(try(rhdf5::h5delete(dbn, d), silent = TRUE))
-      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")), silent = TRUE))
-      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), silent = TRUE))
+  if(rmoldh5){if(verbose){message("Removing old data...")}
+    for(d in dsnl){suppressMessages(try(rhdf5::h5delete(dbn, d), silent = TRUE))
+      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")), 
+        silent = TRUE))
+      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), 
+        silent = TRUE))
     }
   }
   # add red and grn signal tables
@@ -410,14 +357,10 @@ makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
                rmax = rmax, cmax = cmax, nr.inc = ngsm.block,
                fnpath = fnpath, verbose = verbose)
   if(verbose){message("Finished adding red and green channel data.")}
-  # add sample metadata
-  if(!is.null(mdpath)){
-    if(verbose){message("Adding sample metadata to db...")}
+  if(!is.null(mdpath)){if(verbose){message("Adding sample metadata to db...")}
     h5_addmd(dbn, mdpath, verbose = verbose)
   } else{if(verbose){message("No mdpath specified!")}}
-  # finally, close open connections
-  rhdf5::h5closeAll()
-  if(verbose){message("Finished all processes. Returning.")}
+  rhdf5::h5closeAll();if(verbose){message("Finished all processes. Returning.")}
   return(NULL)
 }
 

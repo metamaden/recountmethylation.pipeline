@@ -12,6 +12,7 @@ dt_makefiles(
   nts,
   overwrite = TRUE,
   fnstem = "mdat.compilation",
+  sepval = " ",
   verbose = TRUE
 )
 }
@@ -29,6 +30,8 @@ dt_makefiles(
 \item{overwrite}{Whether to overwrite existing data.table files with same destpath (default TRUE).}
 
 \item{fnstem}{Filename stem for data tables.}
+
+\item{sepval}{Separator symbol for tables (" ").}
 
 \item{verbose}{Whether to return verbose notifications.}
 }

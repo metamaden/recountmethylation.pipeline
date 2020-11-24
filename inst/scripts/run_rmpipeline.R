@@ -35,11 +35,10 @@ library(rmpipeline)
 # datasets metadata
 #------------------
 # set new version
-newversion <- "0.0.1"
+newversion <- "0.0.2"
 # get new datasets metadata
 md <- get_metadata(title = "newrun", version = newversion)
-versionfn <- md[["version"]]
-timestamp <- md[["timestamp"]]
+versionfn <- md[["version"]]; timestamp <- md[["timestamp"]]
 
 #----------------------
 # red/grn signal data
@@ -69,3 +68,8 @@ h5name.gr <- make_h5_gr()
 # make new h5se objects
 make_h5se_gm(h5name.gm)
 make_h5se_gr(h5name.gr)
+
+
+
+
+
