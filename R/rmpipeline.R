@@ -80,7 +80,7 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' #timestamp = get_metadata("title", version)[["timestamp"]]
 #' #dtables_rg(version = version, timestamp = timestamp)
 #' @export
-dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
+dtables_rg_epic <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
   idatspath = file.path("recount-methylation-files", "idats"),
   destpath = file.path("recount-methylation-analysis",
@@ -90,18 +90,18 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
   gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
   if(verbose){message("Making new data tables...")}
-  dtinfo <- dt_makefiles(hlinkv = hlinkv, idatspath = idatspath, 
+  dtinfo <- dt_makefiles_epic(hlinkv = hlinkv, idatspath = idatspath, 
     destpath = destpath, version = version, nts = timestamp, 
     overwrite = overwrite, sepval = sepval, verbose = verbose)
   if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
   dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
   if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
-    tt <- Sys.time()
-    for(i in 1:length(gsmii)){
-      dt_write_rg(gi = gsmii[[i]], hlinkv = hlinkv, idatspath = idatspath, 
-        reds.path = red.path, grns.path = grn.path, verbose = verbose, 
-        num.assays = num.assays)
+    tt <- Sys.time(); data(RGsetEPIC); probes.data <- rownames(RGsetEPIC)
+    for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
+      dt_write_rg_epic(probes.data = probes.data, hlinkv = hlinkvi, 
+        idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
+        verbose = verbose, num.assays = num.assays)
       if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
     }
   } else{stop("Problem encountered handling data tables.")}
@@ -124,7 +124,7 @@ dtables_rg <- function(version, timestamp, verbose = TRUE, gsmint = 60,
 #' @return list containing dtcond (try conditions results), and new dt paths 
 #' (reds.path and grns.path)
 #' @export
-dt_makefiles <- function(hlinkv, idatspath, destpath, version, nts, 
+dt_makefiles_epic <- function(hlinkv, idatspath, destpath, version, nts, 
   overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
@@ -133,8 +133,10 @@ dt_makefiles <- function(hlinkv, idatspath, destpath, version, nts,
   grns.fn <- paste(grns.fn, fnstem, sep = ".")
   reds.path = file.path(destpath, reds.fn)
   grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
-  rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])), force = TRUE)
-  rgcni = colnames(t(minfi::getRed(rgi))); rgcn = matrix(c(cn, rgcni), nrow = 1)
+  rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])),force=TRUE)
+  #rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
+  data(RGsetEPIC); rgi <- RGsetEPIC
+  rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
   if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
                                   append = FALSE, col.names = F))
@@ -178,9 +180,7 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
   idats.validf <- idats.valid[gstr %in% gstr.rg]
   gpath <- unique(gsub("(_Red.idat|_Grn.idat)", "", idats.validf))
   if(verbose){message("Filtering files on latest timestamps...")}
-  gpath.ts <- c()
-  gpath.gid <- c()
-  gidv <- gsub("\\..*", "", gpath)
+  gpath.ts <- c(); gpath.gid <- c(); gidv <- gsub("\\..*", "", gpath)
   tidv <- gsub(".*\\.", "", gsub("\\.hlink.*", "", gpath))
   tsu <- unique(tidv); tsu <- tsu[rev(order(tsu))] # iterate on timestamps
   for(t in tsu){
@@ -197,9 +197,8 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 
 #' Writes chunk of red and grn signal data
 #'
-#' @param gi Vector of IDAT indices to read from hlinkv.
-#' @param hlinkv Vector of GSM IDAT hlink file names, or basenames used to read
-#' in data.
+#' @param probesv Vector of probe labels.
+#' @param hlinkv Vector of GSM IDAT hlink file names, or file basenames.
 #' @param idatspath Path to idat files directory.
 #' @param reds.path Path to new red signal data table.
 #' @param grns.path Path to new grn signal data table.
@@ -210,19 +209,31 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
-dt_write_rg <- function(gi, hlinkv, idatspath, reds.path, grns.path, 
+dt_write_rg_epic <- function(probesv, hlinkv, idatspath, reds.path, grns.path, 
   num.assays = 1052641, sepval = " ", verbose = TRUE){
-  if(verbose){message("Reading data...")};pathl=file.path(idatspath, hlinkv[gi])
-  upathl <- unique(pathl); rgi = try(minfi::read.metharray(upathl,force = TRUE))
-  cond <- nrow(rgi) == num.assays & class(rgi) == "RGChannelSet"
-  if(cond){if(verbose){message("getting data matrices")}
-    redi = matrix(c(colnames(rgi), 
-                    t(minfi::getRed(rgi))), ncol = nrow(rgi) + 1)
-    grni = matrix(c(colnames(rgi), 
-                    t(minfi::getGreen(rgi))), ncol = nrow(rgi) + 1)
-    if(verbose){message("appending new data")}
-    data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
-    data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
+  if(verbose){message("Reading data...")};
+  pathl=unique(file.path(idatspath, hlinkv))
+  rgi=tryCatch(minfi::read.metharray(upathl,force=TRUE))
+  if(class(rgi) == "RGChannelSet"){if(verbose){message("getting data matrices")}
+    red.dat <- minfi::getRed(rgi); grn.dat <- minfi::getGreen(rgi)
+    probesv.out <- probesv[!probesv %in% rownames(rgi)]
+    if(length(probesv.out) > 0){
+      outdat <- rep(rep("NA", length(probesv.out)), ncol(red.dat))
+      outm <- matrix(outdat, ncol = ncol(red.dat));rownames(outm) <- probesv.out
+      red.dat <- rbind(red.dat, outm); grn.dat <- rbind(grn.dat, outm);
+      reorder.red <- order(match(rownames(red.dat), probesv))
+      reorder.grn <- order(match(rownames(grn.dat), probesv))
+      rdat.order <- red.dat[reorder.red,, drop = FALSE]
+      gdat.order <- grn.dat[reorder.grn,, drop = FALSE]
+    }
+    cond <- identical(rownames(rdat.order), probesv) & 
+      identical(rownames(gdat.order), probesv)
+    if(cond){if(verbose){message("appending new data")}
+      redi = matrix(c(colnames(rgi),t(red.dat)), ncol = nrow(red.dat)+1)
+      grni = matrix(c(colnames(rgi),t(grn.dat)), ncol = nrow(grn.dat)+1)
+      data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
+      data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
+    } else{if(verbose){message("Error matching probe vectors. Skipping...")}}
   } else{if(verbose){message("Error reading data. Skipping...")}}; return(NULL)
 }
 
