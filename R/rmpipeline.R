@@ -98,9 +98,9 @@ dtables_rg_epic <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     tt <- Sys.time(); require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
-    probes.data <- rownames(rgi)
+    probesv <- rownames(rgi)
     for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
-      dt_write_rg_epic(probes.data = probes.data, hlinkv = hlinkvi, 
+      dt_write_rg_epic(probesv = probesv, hlinkv = hlinkvi, 
         idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
         verbose = verbose, num.assays = num.assays)
       if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
