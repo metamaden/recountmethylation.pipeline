@@ -213,7 +213,7 @@ dt_write_rg_epic <- function(probesv, hlinkv, idatspath, reds.path, grns.path,
   num.assays = 1052641, sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};
   pathl=unique(file.path(idatspath, hlinkv))
-  rgi=tryCatch(minfi::read.metharray(upathl,force=TRUE))
+  rgi=tryCatch(minfi::read.metharray(pathl,force=TRUE))
   if(class(rgi) == "RGChannelSet"){if(verbose){message("getting data matrices")}
     red.dat <- minfi::getRed(rgi); grn.dat <- minfi::getGreen(rgi)
     probesv.out <- probesv[!probesv %in% rownames(rgi)]
