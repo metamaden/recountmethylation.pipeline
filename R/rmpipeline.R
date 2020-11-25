@@ -220,17 +220,17 @@ dt_write_rg_epic <- function(probesv, hlinkv, idatspath, reds.path, grns.path,
     if(length(probesv.out) > 0){
       outdat <- rep(rep("NA", length(probesv.out)), ncol(red.dat))
       outm <- matrix(outdat, ncol = ncol(red.dat));rownames(outm) <- probesv.out
-      red.dat <- rbind(red.dat, outm); grn.dat <- rbind(grn.dat, outm);
-      reorder.red <- order(match(rownames(red.dat), probesv))
-      reorder.grn <- order(match(rownames(grn.dat), probesv))
-      rdat.order <- red.dat[reorder.red,, drop = FALSE]
-      gdat.order <- grn.dat[reorder.grn,, drop = FALSE]
+      red.dat <- rbind(red.dat, outm); grn.dat <- rbind(grn.dat, outm)
     }
+    reorder.red <- order(match(rownames(red.dat), probesv))
+    reorder.grn <- order(match(rownames(grn.dat), probesv))
+    rdat.order <- red.dat[reorder.red,, drop = FALSE]
+    gdat.order <- grn.dat[reorder.grn,, drop = FALSE]
     cond <- identical(rownames(rdat.order), probesv) & 
       identical(rownames(gdat.order), probesv)
     if(cond){if(verbose){message("appending new data")}
-      redi = matrix(c(colnames(rgi),t(red.dat)), ncol = nrow(red.dat)+1)
-      grni = matrix(c(colnames(rgi),t(grn.dat)), ncol = nrow(grn.dat)+1)
+      redi = matrix(c(colnames(rgi),t(rdat.order)), ncol = nrow(rdat.order)+1)
+      grni = matrix(c(colnames(rgi),t(gdat.order)), ncol = nrow(gdat.order)+1)
       data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
       data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
     } else{if(verbose){message("Error matching probe vectors. Skipping...")}}
