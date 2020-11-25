@@ -12,6 +12,7 @@ Imports:
   rhdf5,
   minfi,
   minfiData,
+  minfiDataEPIC,
   data.table
 Suggests:
   knitr,

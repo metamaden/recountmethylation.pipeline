@@ -44,13 +44,30 @@ versionfn <- md[["version"]]; timestamp <- md[["timestamp"]]
 idats.path <- file.path("recount-methylation-files", "idats")
 idatsv <- dt_checkidat(idatspath=idats.path, verbose = TRUE)
 
+#--------------------------
+# filter idats on file size
+#--------------------------
+dirpath <- file.path("recount-methylation-files", "idats")
+fnv <- list.files(dir.path)
+fnv <- fnv[grepl(".*idat$", fnv) & grepl(".*hlink.*", fnv)]
+dat <- file.info(file.path(dirpath, fnv[1]))
+fnvf <- fnv[2:length(fnv)]
+for(fi in seq(fnvf)){
+  dat <- rbind(dat, file.info(file.path(dirpath, fnvf[fi])))
+  message(fi)
+}
+datf <- dat[dat$size<1.2e7,]; dim(datf)
+for(r in rownames(datf)){file.remove(r)}
+#file.exists(file.path(dirpath, rownames(datf)[1]))
+#rownames(dat)
+
 #----------------------
 # red/grn signal data
 #----------------------
 # navigate to main recount-methylation dir/base dir.
 # e.g. 
 # > cd recount-methylation
-dtables_rg(versionfn, timestamp, destpath = "compilations")
+dtables_rg_epic(versionfn, timestamp, destpath = "compilations")
 
 # make the h5 file
 # navigate to compilations dir

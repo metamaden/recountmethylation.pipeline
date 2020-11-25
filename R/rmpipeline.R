@@ -97,7 +97,8 @@ dtables_rg_epic <- function(version, timestamp, verbose = TRUE, gsmint = 60,
   dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
   if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
-    tt <- Sys.time(); data(RGsetEPIC); probes.data <- rownames(RGsetEPIC)
+    tt <- Sys.time(); require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
+    probes.data <- rownames(rgi)
     for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
       dt_write_rg_epic(probes.data = probes.data, hlinkv = hlinkvi, 
         idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
@@ -134,8 +135,7 @@ dt_makefiles_epic <- function(hlinkv, idatspath, destpath, version, nts,
   reds.path = file.path(destpath, reds.fn)
   grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
   rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])),force=TRUE)
-  #rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
-  data(RGsetEPIC); rgi <- RGsetEPIC
+  require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
   rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
   if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
