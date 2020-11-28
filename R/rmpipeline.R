@@ -326,8 +326,10 @@ h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax, nr.inc = 10,
       } else{if(verbose){message("Error writing new data. Skipping...")}}
       message("For ds ", dsn,", finished reading index ", ni[1], " to ", 
         ni[length(ni)], ", time; ", Sys.time() - tt)
-    };if(verbose){message("Completed writing data for ds, ", dsn)}
-  }rhdf5::h5closeAll();if(verbose){message("Finished adding signal data sets.")}
+    }
+    if(verbose){message("Completed writing data for ds, ", dsn)}
+  }
+  rhdf5::h5closeAll();if(verbose){message("Finished adding signal data sets.")}
   return(NULL)
 }
 

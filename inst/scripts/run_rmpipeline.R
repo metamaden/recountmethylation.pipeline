@@ -98,6 +98,12 @@ ts <- "1589820348"; version <- "0.0.2"
 dbn <- paste0("remethdb_", ts, "_", gsub("\\.", "-", version), ".h5")
 # dbn <- "remethdb_1589820348_0-0-2.h5"
 
+fnl <- c("greensignal_1606324405_0-0-2.mdat.compilation", 
+    "redsignal_1606324405_0-0-2.mdat.compilation")
+
+make_h5db_rg(dbfnstem = "remethdb", version = "0.0.2", ts = "1589820348", 
+            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".", fnl = fnl)
+
 
 make_h5se_rg(dbn = dbn, ts = ts, version = version, cmax = 1052641,
     rmax = 14000)

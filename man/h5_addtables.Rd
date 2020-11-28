@@ -4,7 +4,7 @@
 \alias{h5_addtables}
 \title{Append data tables to HDF5 or SE object}
 \usage{
-h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, verbose = TRUE, nr.inc = 10)
+h5_addtables(dbn, fnl, fnpath, dsnl, rmax, cmax, nr.inc = 10, verbose = TRUE)
 }
 \arguments{
 \item{dbn}{Name of H5 dataset, passed from make_h5db().}
@@ -21,9 +21,9 @@ for new h5 datasets in dsnl.}
 \item{cmax}{Total columns to append to data sets, reflecting total assays or 
 probes.}
 
-\item{verbose}{Whether to print verbose progress messages.}
-
 \item{nr.inc}{Number of samples to append at a time (default: 10).}
+
+\item{verbose}{Whether to print verbose progress messages.}
 }
 \value{
 Populates the HDF5 database

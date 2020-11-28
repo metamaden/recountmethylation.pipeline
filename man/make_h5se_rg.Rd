@@ -2,7 +2,7 @@
 % Please edit documentation in R/rmpipeline.R
 \name{make_h5se_rg}
 \alias{make_h5se_rg}
-\title{Blah}
+\title{make_h5se_rg}
 \usage{
 make_h5se_rg(
   version = "0.0.1",
@@ -31,5 +31,5 @@ make_h5se_rg(
 New h5se object.
 }
 \description{
-Blah
+make_h5se_rg
 }
