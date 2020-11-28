@@ -73,18 +73,39 @@ dtables_rg_epic(versionfn, timestamp, destpath = "compilations")
 # navigate to compilations dir
 # e.g. 
 # > cd recount-methylation/recount-methylation-analysis/files/mdata/compilations
-makeh5db_rg(dbfnstem = "remethdb", version = versionfn, ts = timestamp, 
+make_h5db_rg(dbfnstem = "remethdb", version = versionfn, ts = timestamp, 
             mdpath = "mdpost_all-gsm-md.rda", fnpath = ".",
             fnl = c("redsignal_1589820348_0-0-1.mdat.compilation",
                     "greensignal_1589820348_0-0-1.mdat.compilation"))
+
+
+
+fnl <- c("greensignal_1606324405_0-0-2.mdat.compilation", 
+    "redsignal_1606324405_0-0-2.mdat.compilation")
+
+makeh5db_rg(dbfnstem = "remethdb", version = "0.0.2", ts = "1589820348", 
+            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".", fnl = fnl)
+
 # make the h5se file
 make_h5se(dbn = dbn, newfnstem = fnstem, version = versionfn, ts = timestamp)
 
 #------------------------------
 # meth/unmeth and betavals data
 #------------------------------
+library(rmpipeline)
+
+ts <- "1589820348"; version <- "0.0.2"
+dbn <- paste0("remethdb_", ts, "_", gsub("\\.", "-", version), ".h5")
+# dbn <- "remethdb_1589820348_0-0-2.h5"
+
+
+make_h5se_rg(dbn = dbn, ts = ts, version = version, cmax = 1052641,
+    rmax = 14000)
+
+
+
 # make new h5 files
-h5name.gm <- make_h5_gm()
+h5name.gm <- make_h5_gm(dbn = dbn, ts = ts, version = version)
 h5name.gr <- make_h5_gr()
 # make new h5se objects
 make_h5se_gm(h5name.gm)

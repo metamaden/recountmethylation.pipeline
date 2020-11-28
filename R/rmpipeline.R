@@ -283,52 +283,52 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 #' @param rmax Total rows to append to data sets, reflecting total samples.
 #' @param cmax Total columns to append to data sets, reflecting total assays or 
 #' probes.
-#' @param verbose Whether to print verbose progress messages.
 #' @param nr.inc Number of samples to append at a time (default: 10).
+#' @param verbose Whether to print verbose progress messages.
 #' @return Populates the HDF5 database
 #' @export
-h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax,
-                    verbose = TRUE, nr.inc = 10){
+h5_addtables = function(dbn, fnl, fnpath, dsnl, rmax, cmax, nr.inc = 10, 
+  verbose = TRUE){
   for(di in 1:length(dsnl)){
     fnread = fnl[di]; dsn = dsnl[di]; tt <- Sys.time()
+    cnn = paste0(dsn, ".colnames"); rnn = paste0(dsn, ".rownames")
+    rn = cn = c(); con <- file(paste(fnpath, fnread, sep = "/"), "r")
+    if(verbose){"Making new dataset...."}
     rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax),
                            maxdims = c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited()),
                            storage.mode = "double", level = 5, chunk = c(1, 5))
-    rn = cn = c(); con <- file(paste(fnpath, fnread, sep = "/"), "r")
+    if(verbose){message("Adding colnames...")}
     cn = unlist(strsplit(readLines(con, n = 1), " ")); cn = cn[2:length(cn)]
-    cn = gsub("\n", "",gsub('\"', '', cn[1:cmax]));nri = getblocks(rmax, nr.inc)
-    for(ni in nri){wgsm = c()
-      i = ni[1]; dati = unlist(strsplit(readLines(con, n = length(ni)), " "))
+    cn = gsub("\n", "",gsub('\"', '', cn[1:cmax]))
+    rhdf5::h5createDataset(dbn, cnn, dims = length(cn),storage.mode="character", 
+      maxdims = c(rhdf5::H5Sunlimited()), level = 5, chunk = c(20), size = 256)
+    rhdf5::h5write(cn, file = dbn, name = cnn, index = list(1:length(cn)))
+    if(verbose){message("Making rownames dataset....")}
+    rhdf5::h5createDataset(dbn, rnn, dims = rmax, 
+          maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", 
+          level = 5, chunk = c(20), size = 256)
+    if(verbose){message("Working on sample indices...")}
+    nri = getblocks(rmax, nr.inc)
+    for(ni in nri){ni <- unlist(ni)
+      wgsm = c();dati = unlist(strsplit(readLines(con, n = nr.inc), " "))
       wdi = which(grepl(".*GSM.*", dati)); dff = matrix(nrow = 0, ncol = cmax)
       ngsm = gsub("\n", "", gsub('\"', '', gsub("\\..*", "", dati[wdi])))
+      # check gsm hasn't already been written
       for(wi in 1:length(wdi)){
-        if(!ngsm[wi] %in% rn){wadd = wdi[wi] + 1
+        if(!ngsm[wi] %in% rn){wadd = wdi[wi] + 1; wgsm = c(wgsm, ngsm[wi])
           dff = rbind(dff, matrix(dati[wadd:(wadd + cmax - 1)], nrow = 1))
-          wgsm = c(wgsm, ngsm[wi])
         }
       }; rn = c(rn, wgsm); class(dff) = "numeric"
-      rhdf5::h5write(dff, file = dbn, name = dsn,
-                     index = list(ni[1]:ni[length(ni)], 1:cmax))
-      rhdf5::h5closeAll()
-      message("For ds ", dsn,", finished reading index ", i,
-              " to ", ni[length(ni)], ", time; ", Sys.time() - tt)
-    }
-    message("Adding row and column names for ds ", dsn)
-    cnn = paste0(dsn, ".colnames"); rnn = paste0(dsn, ".rownames");
-    rhdf5::h5createDataset(dbn, cnn, dims = length(cn), maxdims = c(rhdf5::H5Sunlimited()),
-                           storage.mode = "character", level = 5, # compression level, 1-9
-                           chunk = c(20), size = 256) # chunk dims
-    message("Added colnames.")
-    rhdf5::h5createDataset(dbn, rnn, dims = length(rn), maxdims = c(rhdf5::H5Sunlimited()),
-                           storage.mode = "character", level = 5, # compression level, 1-9
-                           chunk = c(20), size = 256) # chunk dims
-    message("Added rownames.")
-    rhdf5::h5write(cn, file = dbn, name = cnn, index = list(1:length(cn)))
-    rhdf5::h5write(rn, file = dbn, name = rnn, index = list(1:length(rn)))
-    rhdf5::h5closeAll(); message("Completed writing data for ds, ", dsn)
-  }
-  if(verbose){message("Finished adding red and green channel data sets.")}
-  rhdf5::h5closeAll(); return(NULL)
+      wt <- try(rhdf5::h5write(dff, file = dbn, name = dsn,
+                     index = list(ni[1]:ni[length(ni)], 1:cmax)))
+      if(!class(wt) == "type-error"){if(verbose){message("Adding rownames...")}
+        rhdf5::h5write(rn,file=dbn,name=rnn,index=list(ni[1]:ni[length(ni)]))
+      } else{if(verbose){message("Error writing new data. Skipping...")}}
+      message("For ds ", dsn,", finished reading index ", ni[1], " to ", 
+        ni[length(ni)], ", time; ", Sys.time() - tt)
+    };if(verbose){message("Completed writing data for ds, ", dsn)}
+  }rhdf5::h5closeAll();if(verbose){message("Finished adding signal data sets.")}
+  return(NULL)
 }
 
 #' Make and populate a new HDF5 database with red and green signal, and metadata
@@ -367,17 +367,17 @@ makeh5db_rg <- function(dbfnstem, version, ts, fnl, fnpath,
   suppressMessages(try(rhdf5::h5createFile(dbn), silent = TRUE))
   if(rmoldh5){if(verbose){message("Removing old data...")}
     for(d in dsnl){suppressMessages(try(rhdf5::h5delete(dbn, d), silent = TRUE))
-      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")), 
+      suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".colnames")),
         silent = TRUE))
       suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), 
         silent = TRUE))
     }
   }
-  # add red and grn signal tables
+  # add red and grn signal tables -- 
+  # note, this *must* be processive due to HDF5 write protection
   if(verbose){message("Adding and populating data tables to HDF5 database")}
-  h5_addtables(dbn = dbn, fnl = fnl, dsnl = c("redsignal", "greensignal"),
-               rmax = rmax, cmax = cmax, nr.inc = ngsm.block,
-               fnpath = fnpath, verbose = verbose)
+  h5_addtables(dbn = dbn, fnl = fnl, dsnl = dsnl, rmax = rmax, cmax = cmax, 
+    nr.inc = ngsm.block, fnpath = fnpath, verbose = verbose)
   if(verbose){message("Finished adding red and green channel data.")}
   if(!is.null(mdpath)){if(verbose){message("Adding sample metadata to db...")}
     h5_addmd(dbn, mdpath, verbose = verbose)
@@ -469,9 +469,9 @@ se_addpheno <- function(phenopath, se, pdat = NULL, verbose = TRUE){
   return(NULL)
 }
 
-#' Blah
+#' make_h5se_rg
 #'
-#' Blah
+#' make_h5se_rg
 #' @param version The data file version.
 #' @param ts Data file NTP timestamp (integer).
 #' @returns New h5se object.
