@@ -5,31 +5,64 @@
 \title{make_h5se_rg}
 \usage{
 make_h5se_rg(
+  max.sample,
+  platform = c("hm450k", "epic"),
   version = "0.0.1",
   ts = 1590090412,
   dbn = "remethdb_1590090412_0-0-1.h5",
   newfnstem = "remethdb_h5se-rg",
   dsnv = c("redsignal", "greensignal"),
+  add.metadata = FALSE,
+  mdpath = NULL,
   dsn.md = "mdpost",
   dsn.md.cn = paste0(dsn.md, ".colnames"),
   verbose = TRUE,
-  addmd = TRUE,
-  mdpath = NULL,
   replace.opt = TRUE,
   dsn.rnv = c(paste0(dsnv[1], ".rownames"), paste0(dsnv[2], ".rownames")),
   dsn.cnv = c(paste0(dsnv[1], ".colnames"), paste0(dsnv[2], ".colnames")),
-  semd = list(title = "Recount methylation H5-SE object", version = version, timestamp
-    = ts, preprocessing = "raw")
+  semd = list(title = "RGChannelSet HDF5-SummarizedExperiment object", preprocessing =
+    "raw")
 )
 }
 \arguments{
+\item{max.sample}{Max index of samples to write to new data (integer). Setting
+this will trim the samples on reading the HDF5 db. This should reflect the 
+final successfully written sample index, and/or the final unique sample id 
+in the rownames vector that is read.}
+
+\item{platform}{Array platform (either "hm450k" or "epic").}
+
 \item{version}{The data file version.}
 
 \item{ts}{Data file NTP timestamp (integer).}
+
+\item{dbn}{Name/path of HDF5 database file.}
+
+\item{newfnstem}{File name stem for new database file.}
+
+\item{dsnv}{Table names vector.}
+
+\item{add.metadata}{Whether to add samples metadata (boolean, FALSE).}
+
+\item{mdpath}{Path to metadata pile (if NULL, search the HDF5 database).}
+
+\item{dsn.md}{Metadata table name, used if add.metadata is TRUE.}
+
+\item{dsn.md.cn}{Metadata columns object, used if add.metadata is TRUE.}
+
+\item{verbose}{Whether to show status messages (boolean, TRUE).}
+
+\item{replace.opt}{Whether to replace/overwrite old H5SE object (TRUE).}
+
+\item{dsn.rnv}{Names vector of rownames objects in HDF5 database.}
+
+\item{dsn.cnv}{Names vector of colnames objects in HDF5 database.}
+
+\item{semd}{Metadata vector for new H5SE object to be written.}
 }
 \value{
 New h5se object.
 }
 \description{
-make_h5se_rg
+Make an RGChannelSet HDF5-SummarizedExperiment object from an HDF5 database.
 }

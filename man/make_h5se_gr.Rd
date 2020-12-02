@@ -5,27 +5,37 @@
 \title{Make an h5se object from an h5se gr file}
 \usage{
 make_h5se_gr(
+  dbn,
   version,
   ts,
-  h5name,
-  pdata,
+  platform = c("hm450k", "epic"),
   replaceopt = TRUE,
-  newdnstem = "remethdb-h5se"
+  verbose = TRUE,
+  add.metadata = FALSE,
+  pdata = NULL,
+  newdnstem = "remethdb_h5se-gr",
+  semd = list(title = "GenomicMethylSet HDF5-SummarizedExperiment object",
+    preprocessing = "Normalization with out-of-band signal (noob)")
 )
 }
 \arguments{
+\item{dbn}{Path to HDF5 database file to read data from.}
+
 \item{version}{Version for new filenames.}
 
 \item{ts}{NTP timestamp.}
 
-\item{h5name}{Name of the h5 file to read data from.}
-
-\item{pdata}{Metadata object obtained from pData(se).}
-
 \item{replaceopt}{Whether to overwrite existing file of same name as new file
 (default = TRUE).}
 
-\item{newdnstem}{Stem for new h5se object file.}
+\item{verbose}{Whether to return verbose messages (default TRUE).}
+
+\item{add.metadata}{Whether to add samples metadata (boolean, FALSE).}
+
+\item{pdata}{Samples metadata as a DataFrame, path to file, or NULL.}
+
+\item{newdnstem}{Character stme for new h5se object file 
+("remethdb_h5se-gr").}
 }
 \value{
 NULL, generates a new h5se file.

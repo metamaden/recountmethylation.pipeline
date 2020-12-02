@@ -2,28 +2,39 @@
 % Please edit documentation in R/rmpipeline.R
 \name{make_h5se_gm}
 \alias{make_h5se_gm}
-\title{Make an h5se object from an h5se gm file}
+\title{Make an H5SE MethySet object from a MethySet HDF5 database file}
 \usage{
 make_h5se_gm(
+  dbn,
   version,
   ts,
-  h5name,
-  pdata,
+  platform = c("hm450k", "epic"),
   replaceopt = TRUE,
-  newdnstem = "remethdb-h5se"
+  verbose = TRUE,
+  add.metadata = FALSE,
+  pdata = NULL,
+  newdnstem = "remethdb_h5se-gm",
+  semd = list(title = "GenomicMethylSet HDF5-SummarizedExperiment object",
+    preprocessing = "raw")
 )
 }
 \arguments{
+\item{dbn}{Name of the h5 file to read data from.}
+
 \item{version}{Version for new filenames.}
 
 \item{ts}{NTP timestamp.}
 
-\item{h5name}{Name of the h5 file to read data from.}
-
-\item{pdata}{Metadata object obtained from pData(se).}
+\item{platform}{Array platform (either "hm450k" or "epic").}
 
 \item{replaceopt}{Whether to overwrite existing file of same name as new file
 (default = TRUE).}
+
+\item{verbose}{Whether to return verbose messages (default TRUE).}
+
+\item{add.metadata}{Whether to add samples metadata (boolean, FALSE).}
+
+\item{pdata}{Metadata object obtained from pData(se).}
 
 \item{newdnstem}{Stem for new h5se object file.}
 }
@@ -31,5 +42,5 @@ make_h5se_gm(
 NULL, generates a new h5se file.
 }
 \description{
-Make an h5se object from an h5se gm file
+Make an H5SE MethySet object from a MethySet HDF5 database file
 }

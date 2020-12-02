@@ -9,28 +9,37 @@ make_h5_gm(
   dbn,
   version,
   ts,
-  newfnstem = "remethdb_h5",
+  num.samp,
+  blocksize = 65,
+  platform = c("hm450k", "epic"),
+  newfnstem = "remethdb_h5-gm",
   verbose = TRUE,
-  replace.opt = TRUE,
-  blocksize = 65
+  dsv = c("meth", "unmeth"),
+  replace.opt = TRUE
 )
 }
 \arguments{
-\item{dbn}{Path to the RGChannelSet h5se object.}
+\item{dbn}{Path to the RGChannelSet H5SE data directory.}
 
 \item{version}{Version for new h5 file.}
 
 \item{ts}{Timestamp for new h5 file.}
 
+\item{num.samp}{Number of samples in HDF5 dataset.}
+
+\item{blocksize}{Size of blocks/number of samples to process at a time 
+(default 65).}
+
+\item{platform}{Array platform (either "hm450k" or "epic").}
+
 \item{newfnstem}{New filename stem for h5 file.}
 
 \item{verbose}{Whether to return verbose messages (default TRUE).}
 
+\item{dsv}{Vector of new datasets to add to h5 HDF5 database.}
+
 \item{replace.opt}{Whether to replace h5 files with duplicate filename 
 (default TRUE).}
-
-\item{blocksize}{Size of blocks/number of samples to process at a time 
-(default 65).}
 }
 \value{
 Path to new h5 object.

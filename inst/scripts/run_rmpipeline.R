@@ -73,36 +73,174 @@ dtables_rg_epic(versionfn, timestamp, destpath = "compilations")
 # navigate to compilations dir
 # e.g. 
 # > cd recount-methylation/recount-methylation-analysis/files/mdata/compilations
-make_h5db_rg(dbfnstem = "remethdb", version = versionfn, ts = timestamp, 
-            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".",
-            fnl = c("redsignal_1589820348_0-0-1.mdat.compilation",
-                    "greensignal_1589820348_0-0-1.mdat.compilation"))
 
+library(rmpipeline)
 
+read.path <- file.path("home","metamaden","recount-methylation-epic","compilations")
+write.path <- file.path("eternity","recount-methylation","recount-methylation-epic")
 
-fnl <- c("greensignal_1606324405_0-0-2.mdat.compilation", 
+fnl <- c("greensignal_1606324405_0-0-2.mdat.compilation",
     "redsignal_1606324405_0-0-2.mdat.compilation")
 
-makeh5db_rg(dbfnstem = "remethdb", version = "0.0.2", ts = "1589820348", 
-            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".", fnl = fnl)
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1589820348", mdpath = "mdpost_all-gsm-md.rda", fnpath = read.path, fnl = fnl,
+    ngsm.block = 50, cmax = 1052641, rmax = 14000)
 
-# make the h5se file
-make_h5se(dbn = dbn, newfnstem = fnstem, version = versionfn, ts = timestamp)
+fnl <- "greensignal_1606324405_0-0-2.mdat.compilation"
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1589820348", mdpath = "mdpost_all-gsm-md.rda", fnpath=read.path, fnl=fnl,
+    ngsm.block = 50, cmax = 1052641, rmax = 14000, dsnl = "greensignal")
+
+
+
+platform = "epic" # c("hm450k", "epic")
+version = "0.0.2"
+ts = 1589820348
+dbn = "remethdb_1589820348_0-0-2.h5"
+newfnstem = "remethdb_h5se-rg"
+dsnv = c("redsignal", "greensignal")
+add.metadata=FALSE
+mdpath=NULL
+dsn.md="mdpost"
+dsn.md.cn=paste0(dsn.md,".colnames")
+verbose = TRUE
+replace.opt = TRUE
+dsn.rnv = c(paste0(dsnv[1], ".rownames"), paste0(dsnv[2], ".rownames"))
+dsn.cnv = c(paste0(dsnv[1], ".colnames"), paste0(dsnv[2], ".colnames"))
+semd=list("title"="RGChannelSet HDF5-SummarizedExperiment object",
+    "preprocessing"="raw")
+
+#--------------
+# rgchannel set
+#--------------
+# hdf5 db
+fnl <- "redsignal_1606324405_0-0-2.mdat.compilation"
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1589820348", mdpath = "mdpost_all-gsm-md.rda", fnpath = read.path, 
+    fnl = fnl, ngsm.block = 50, cmax = 1052641, rmax = 14000, dsnl="redsignal")
+fnl <- "greensignal_1606324405_0-0-2.mdat.compilation"
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1589820348", mdpath = "mdpost_all-gsm-md.rda", fnpath=read.path, 
+    fnl=fnl, ngsm.block = 50, cmax = 1052641, rmax = 14000, dsnl = "greensignal")
+
+# h5se file
+make_h5se_rg(max.sample = 12650, platform = "epic", version = "0.0.2", 
+    ts = 1589820348, dbn = "remethdb_1589820348_0-0-2.h5", 
+    newfnstem = "remethdb_h5se-rg")
+
+#-------------------
+# genomic methyl set
+#-------------------
+# hdf5 db
+make_h5_gm(dbn = "remethdb_h5se-rg_epic_0-0-2_1589820348", version = "0.0.2", 
+    ts = 1589820348, num.samp = 12650, blocksize = 65, platform = "epic", 
+    newfnstem = "remethdb_h5-gm", verbose = TRUE, replace.opt = TRUE)
+
+# h5se file
+make_h5se_gm(dbn = "remethdb_h5-gm_epic_0-0-2_1589820348.h5", version = "0.0.2", 
+    ts = 1589820348, platform = "epic", replaceopt = TRUE, verbose = TRUE, 
+    add.metadata = FALSE, pdata = NULL, newdnstem = "remethdb_h5se-gm")
+
+#------------------
+# genomic methylset
+#------------------
+# hdf5 db
+make_h5_gr(dbn = "remethdb_h5se-rg_epic_0-0-2_1589820348", version = "0.0.2", 
+    ts = 1589820348, num.samp = 12650, blocksize = 10, platform = "epic", 
+    newfnstem = "remethdb_h5-gr", verbose = TRUE, replace.opt = TRUE)
+
+# h5se file
+
+
+
+
 
 #------------------------------
 # meth/unmeth and betavals data
 #------------------------------
-library(rmpipeline)
+# make the h5se file
+make_h5se(dbn = dbn, newfnstem = fnstem, version = versionfn, ts = timestamp)
 
-ts <- "1589820348"; version <- "0.0.2"
-dbn <- paste0("remethdb_", ts, "_", gsub("\\.", "-", version), ".h5")
-# dbn <- "remethdb_1589820348_0-0-2.h5"
 
-fnl <- c("greensignal_1606324405_0-0-2.mdat.compilation", 
-    "redsignal_1606324405_0-0-2.mdat.compilation")
 
-make_h5db_rg(dbfnstem = "remethdb", version = "0.0.2", ts = "1589820348", 
-            mdpath = "mdpost_all-gsm-md.rda", fnpath = ".", fnl = fnl)
+
+
+
+
+
+
+
+
+
+
+# test written data in h5db
+ngsm.block = 11
+dsn <- dsnl[1]
+fnread <- fnl[1]
+con <- file(file.path(fnpath, fnread), "r")
+dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
+      nrow = ngsm.block, byrow = TRUE)
+dbn <- "remethdb_1589820348_0-0-2.h5"
+h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1:10))
+h5.rn <- rhdf5::h5read(dbn, paste0(dsn, ".rownames"), index = list(1:10))
+
+#------------------
+# test data written
+#------------------
+dsn <- "redsignal"
+fnread <- "redsignal_1606324405_0-0-2.mdat.compilation"
+dbn <- "remethdb_1589820348_0-0-2.h5"
+rmax <- 14000
+cmax <- 1052641
+ngsm.block <- 10
+fnpath <- "."
+
+# read new data
+con <- file(file.path(fnpath, fnread), "r")
+dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
+      nrow = ngsm.block, byrow = TRUE)
+
+# remove old dataset
+# try(rhdf5::h5delete(dbn, dsn), silent = TRUE)
+
+# create new db
+rhdf5::h5createFile(dbn)
+
+# create new dataset
+dbdims <- c(rmax, cmax)
+maxdimsv <- c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited())
+rhdf5::h5createDataset(dbn, dsn, dims = dbdims,
+                         maxdims=maxdimsv,
+                         storage.mode = "double", 
+                         level = 5, 
+                         chunk = c(10, 5000))
+
+# write data rows
+dati.filt <- dati[c(2:nrow(dati)),c(2:ncol(dati))]
+class(dati.filt) <- "numeric" # *** KEY STEP
+start.index <- 1; end.index <- 9
+lindex <- list(start.index:end.index, 1:cmax)
+wt <- try(rhdf5::h5write(dati.filt, file = dbn, name = dsn, index = lindex))
+
+h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1:10))
+h5.line
+
+h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1052631:1052641))
+h5.line
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 make_h5se_rg(dbn = dbn, ts = ts, version = version, cmax = 1052641,
