@@ -2,9 +2,9 @@
 
 export(data_mdpost)
 export(dt_checkidat)
-export(dt_makefiles_epic)
-export(dt_write_rg_epic)
-export(dtables_rg_epic)
+export(dt_makefiles)
+export(dt_write_rg)
+export(dtables_rg)
 export(get_metadata)
 export(getblocks)
 export(h5_add_tables)

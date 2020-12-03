@@ -150,110 +150,59 @@ make_h5_gr(dbn = "remethdb_h5se-rg_epic_0-0-2_1589820348", version = "0.0.2",
     newfnstem = "remethdb_h5-gr", verbose = TRUE, replace.opt = TRUE)
 
 # h5se file
+make_h5se_gr(dbn = "remethdb_h5-gr_epic_0-0-2_1589820348.h5", version = "0.0.2", 
+    ts = 1589820348, platform = "epic", replaceopt = TRUE, 
+    verbose = TRUE, add.metadata = FALSE, pdata = NULL, 
+    newdnstem = "remethdb_h5se-gr", 
+  semd=list("title"="GenomicMethylSet HDF5-SummarizedExperiment object",
+    "preprocessing"="Normalization with out-of-band signal (noob)"))
 
 
 
+#--------------
+# HM450K arrays
+#--------------
+library(rmpipeline)
+
+# datasets metadata
+platform <- "hm450k"
+newversion <- "0.0.2"
+md <- get_metadata(title = "newrun", version = newversion)
+versionfn <- md[["version"]]; timestamp <- md[["timestamp"]]
+
+timestamp <- ts <- 1607018051
+version <- "0.0.2"
+
+# idats paths
+idats.path <- file.path("home", "metamaden", "recount-methylation-hm450k", 
+    "recount-methylation-files", "idats")
+idatsv <- dt_checkidat(idatspath=idats.path, verbose = TRUE)
+
+# filter idats on file size
+#dirpath <- file.path("recount-methylation-files", "idats")
+#fnv <- list.files(dir.path)
+#fnv <- fnv[grepl(".*idat$", fnv) & grepl(".*hlink.*", fnv)]
+#dat <- file.info(file.path(dirpath, fnv[1]))
+#fnvf <- fnv[2:length(fnv)]
+#for(fi in seq(fnvf)){
+#  dat <- rbind(dat, file.info(file.path(dirpath, fnvf[fi])))
+#  message(fi)
+#}
+#datf <- dat[dat$size<1.2e7,]; dim(datf)
+#for(r in rownames(datf)){file.remove(r)}
+#file.exists(file.path(dirpath, rownames(datf)[1]))
+#rownames(dat)
+
+# red/grn signal data
+writepath <- file.path("eternity", "recount-methylation", 
+    "recount-methylation-hm450k")
+readpath <- file.path("home", "metamaden", "recount-methylation-hm450k", 
+    "recount-methylation-files", "idats")
+
+dtables_rg(platform = platform, version = version, timestamp = timestamp, 
+    idatspath = readpath, destpath = writepath)
 
 
-#------------------------------
-# meth/unmeth and betavals data
-#------------------------------
-# make the h5se file
-make_h5se(dbn = dbn, newfnstem = fnstem, version = versionfn, ts = timestamp)
-
-
-
-
-
-
-
-
-
-
-
-
-
-# test written data in h5db
-ngsm.block = 11
-dsn <- dsnl[1]
-fnread <- fnl[1]
-con <- file(file.path(fnpath, fnread), "r")
-dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
-      nrow = ngsm.block, byrow = TRUE)
-dbn <- "remethdb_1589820348_0-0-2.h5"
-h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1:10))
-h5.rn <- rhdf5::h5read(dbn, paste0(dsn, ".rownames"), index = list(1:10))
-
-#------------------
-# test data written
-#------------------
-dsn <- "redsignal"
-fnread <- "redsignal_1606324405_0-0-2.mdat.compilation"
-dbn <- "remethdb_1589820348_0-0-2.h5"
-rmax <- 14000
-cmax <- 1052641
-ngsm.block <- 10
-fnpath <- "."
-
-# read new data
-con <- file(file.path(fnpath, fnread), "r")
-dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
-      nrow = ngsm.block, byrow = TRUE)
-
-# remove old dataset
-# try(rhdf5::h5delete(dbn, dsn), silent = TRUE)
-
-# create new db
-rhdf5::h5createFile(dbn)
-
-# create new dataset
-dbdims <- c(rmax, cmax)
-maxdimsv <- c(rhdf5::H5Sunlimited(), rhdf5::H5Sunlimited())
-rhdf5::h5createDataset(dbn, dsn, dims = dbdims,
-                         maxdims=maxdimsv,
-                         storage.mode = "double", 
-                         level = 5, 
-                         chunk = c(10, 5000))
-
-# write data rows
-dati.filt <- dati[c(2:nrow(dati)),c(2:ncol(dati))]
-class(dati.filt) <- "numeric" # *** KEY STEP
-start.index <- 1; end.index <- 9
-lindex <- list(start.index:end.index, 1:cmax)
-wt <- try(rhdf5::h5write(dati.filt, file = dbn, name = dsn, index = lindex))
-
-h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1:10))
-h5.line
-
-h5.line <- rhdf5::h5read(dbn, dsn, index = list(1:9, 1052631:1052641))
-h5.line
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-make_h5se_rg(dbn = dbn, ts = ts, version = version, cmax = 1052641,
-    rmax = 14000)
-
-
-
-# make new h5 files
-h5name.gm <- make_h5_gm(dbn = dbn, ts = ts, version = version)
-h5name.gr <- make_h5_gr()
-# make new h5se objects
-make_h5se_gm(h5name.gm)
-make_h5se_gr(h5name.gr)
 
 
 

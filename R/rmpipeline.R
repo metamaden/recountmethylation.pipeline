@@ -65,6 +65,8 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' and data.table options, and provides verbose input from main for loop to 
 #' write data. 
 #'
+#' @param platform The DNAm array platform of files to read/write (either 
+#' "hm450k" or "epic").
 #' @param version Version of the run for data table filenames.
 #' @param timestamp NTP timestamp integer, for filenames (see get_metadata function).
 #' @param verbose Whether to return verbose notifications.
@@ -80,38 +82,44 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 #' #timestamp = get_metadata("title", version)[["timestamp"]]
 #' #dtables_rg(version = version, timestamp = timestamp)
 #' @export
-dtables_rg_epic <- function(version, timestamp, verbose = TRUE, gsmint = 60,
-  overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ",
-  idatspath = file.path("recount-methylation-files", "idats"),
+dtables_rg <- function(platform = c("hm450k", "epic"), version, timestamp, 
+  verbose = TRUE, gsmint = 60, overwrite = TRUE, fnstem = "mdat.compilation", 
+  sepval = " ", idatspath = file.path("recount-methylation-files", "idats"),
   destpath = file.path("recount-methylation-analysis",
     "files", "mdata", "compilations")){
-idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
-hlinkv <- idatinfo[["hlinkv"]]; gsmu <- idatinfo[["gsmu"]]
-if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
-gsmii <- getblocks(length(gsmu), gsmint) # get list of id vectors, e.g. "blocks"
-if(verbose){message("Making new data tables...")}
-dtinfo <- dt_makefiles_epic(hlinkv = hlinkv, idatspath = idatspath, 
-  destpath = destpath, version = version, nts = timestamp, 
-  overwrite = overwrite, sepval = sepval, verbose = verbose)
-if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
-dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
-if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
-  if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
-  tt <- Sys.time(); require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
-  probesv <- rownames(rgi)
-  for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
-    dt_write_rg_epic(probesv = probesv, hlinkv = hlinkvi, 
-      idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
-      verbose = verbose, num.assays = num.assays)
-    if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
+  idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
+  hlinkv <- idatinfo[["hlinkv"]]; gsmu <- idatinfo[["gsmu"]]
+  if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
+  gsmii <- getblocks(length(gsmu), gsmint) # get id vectors list
+  if(verbose){message("Making new data tables...")}
+  dtinfo <- dt_makefiles(platform = platform, hlinkv = hlinkv, 
+    idatspath = idatspath, destpath = destpath, version = version, nts=timestamp, 
+    overwrite = overwrite, sepval = sepval, verbose = verbose)
+  if(verbose){message("Wrote data with ", dtinfo[["num.assays"]], " assays.")}
+  dtcond <- dtinfo[["dtcond"]]; num.assays = dtinfo[["num.assays"]]
+  if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
+    if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
+    if(platform == "hm450k"){
+      require(minfiData); data(RGsetEx); rgi <- RGsetEx
+      } else if(platform == "epic"){
+        require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
+        } else(stop("Error, invalid platform provided."))
+    tt <- Sys.time(); probesv <- rownames(rgi)
+    for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
+      dt_write_rg(probesv = probesv, hlinkv = hlinkvi, 
+        idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
+        verbose = verbose, num.assays = num.assays)
+      if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
+    }
+  } else{stop("Problem encountered handling data tables.")}
+    if(verbose){message("Successfully completed data tables.")}; return(NULL)
   }
-} else{stop("Problem encountered handling data tables.")}
-  if(verbose){message("Successfully completed data tables.")}; return(NULL)
-}
 
 #' Make and manage data.table files for red and grn signal
 #'
 #' Handles options for signal tables, returns paths used to write data chunks.
+#' @param platform The DNAm array platform of files to read/write (either 
+#' "hm450k" or "epic").
 #' @param hlinkv Vector of GSM IDAT hlinks, or the basenames used to read data.
 #' @param idatspath Path to idat files to read
 #' @param destpath Destination path to new signal data tables.
@@ -125,8 +133,9 @@ if(dtcond){red.path <- dtinfo[["reds.path"]];grn.path <- dtinfo[["grns.path"]]
 #' @return list containing dtcond (try conditions results), and new dt paths 
 #' (reds.path and grns.path)
 #' @export
-dt_makefiles_epic <- function(hlinkv, idatspath, destpath, version, nts, 
-  overwrite = TRUE, fnstem = "mdat.compilation", sepval = " ", verbose = TRUE){
+dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath, 
+  destpath, version, nts, overwrite = TRUE, fnstem = "mdat.compilation", 
+  sepval = " ", verbose = TRUE){
   version.fn <- gsub("\\.", "-", version)
   reds.fn <- paste("redsignal", nts, version.fn, sep = "_")
   reds.fn <- paste(reds.fn, fnstem, sep = ".")
@@ -135,7 +144,12 @@ dt_makefiles_epic <- function(hlinkv, idatspath, destpath, version, nts,
   reds.path = file.path(destpath, reds.fn)
   grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
   rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])),force=TRUE)
-  require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
+  if(verbose){message("Getting platform data...")}
+  if(platform == "hm450k"){
+    require(minfiData); data(RGsetEx); rgi <- RGsetEx
+    } else if(platform == "epic"){
+      require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
+      } else{stop("Error, invalid platform provided.")}
   rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
   if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
@@ -205,12 +219,12 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @param min.cols Minimum data columns to write DNAm data (integer, )
 #' @param sepval Separator symbol for data tables.
 #' @param num.assays Number of assays to expect before writing (1052641 for 
-#' EPIC).
+#' epic, 622399 for hm450k).
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
-dt_write_rg_epic <- function(probesv, hlinkv, idatspath, reds.path, grns.path, 
-  num.assays = 1052641, sepval = " ", verbose = TRUE){
+dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path, 
+  num.assays = c(622399, 1052641), sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};
   pathl=unique(file.path(idatspath, hlinkv))
   rgi=try(minfi::read.metharray(pathl,force=TRUE))
@@ -731,27 +745,27 @@ make_h5se_gr <- function(dbn, version, ts, platform = c("hm450k", "epic"),
   newdnstem = "remethdb_h5se-gr", 
   semd=list("title"="GenomicMethylSet HDF5-SummarizedExperiment object",
     "preprocessing"="Normalization with out-of-band signal (noob)")){
-  newfn <- paste0(newdnstem, platform, version, ts, sep = "_")
+  newfn <- paste(newdnstem, platform, gsub("\\.", "-", version), ts, sep = "_")
   if(verbose){message("Making new H5SE database: ", newfn)}
-  if(platform == ""){require(minfiData)
+  if(platform == "hm450k"){require(minfiData)
     ms <- minfi::mapToGenome(get(data("MsetEx")))
-    } else if(platform == ""){require(minfiDataEPIC)
+    } else if(platform == "epic"){require(minfiDataEPIC)
       ms <- minfi::mapToGenome(get(data("MsetEPIC")))
       } else{stop("Error, didn't recognize platform.")}
-  anno <- minfi::annotation(ms)
-  gr <- GenomicRanges::granges(ms)
+  anno <- minfi::annotation(ms);gr <- GenomicRanges::granges(ms)
   message("Reading datasets.");nbeta <- HDF5Array::HDF5Array(dbn, "noobbeta")
   cn<-rhdf5::h5read(dbn,"colnames");rn<-rhdf5::h5read(dbn,"rownames")
   rownames(nbeta) <- as.character(rn);colnames(nbeta) <- as.character(cn)
   gr <- gr[order(match(names(gr), rownames(nbeta)))]
   icond <- identical(rownames(nbeta), names(gr))
-  if(!icond){stop("Problem matching gr names to h5 nbeta rows")}
-  icond <- identical(colnames(nbeta), rownames(pdata))
-  if(!icond){stop("Problem matching pdata rows to h5 nbeta cols")}
+  if(!icond){stop("Problem matching gr names to h5 nbeta rows")}  
   gmi <- minfi::GenomicRatioSet(gr = gr, Beta = nbeta, annotation = anno)
   S4Vectors::metadata(gmi) <- semd # H5SE object metadata
-  if(add.metadata & !is.null(pdata)){message("Adding metadata...")
-    if(is.character(pdata)){pdata <- get(load(pdata))};pData(gmi) <- pdata}
+  if(add.metadata & !is.null(pdata)){message("Checking and adding metadata...")
+    icond <- identical(colnames(nbeta), rownames(pdata))
+    if(!icond){stop("Problem matching pdata rows to h5 nbeta cols")}
+    if(is.character(pdata)){pdata <- get(load(pdata))};pData(gmi) <- pdata
+  }
   message("Writing new data to h5se object. This may take awhile.")
   HDF5Array::saveHDF5SummarizedExperiment(gmi, dir = newfn, replace = replaceopt)
   message("Finished writing h5se data.");return(NULL)
