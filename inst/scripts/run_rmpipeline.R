@@ -202,6 +202,31 @@ readpath <- file.path("home", "metamaden", "recount-methylation-hm450k",
 dtables_rg(platform = platform, version = version, timestamp = timestamp, 
     idatspath = readpath, destpath = writepath)
 
+library(rmpipeline)
+
+read.path <- write.path <- file.path(".")
+fnl <- c("redsignal_1607018051_0-0-2.mdat.compilation",
+    "greensignal_1607018051_0-0-2.mdat.compilation")
+
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1607018051", mdpath = "mdpost_all-gsm-md.rda", fnpath = read.path, fnl = fnl,
+    ngsm.block = 60, cmax = 622399, rmax = 110000)
+
+fnl <- "greensignal_1607018051_0-0-2.mdat.compilation"
+make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
+    ts = "1607018051", mdpath = NULL, fnpath=read.path, fnl=fnl,
+    ngsm.block = 60, cmax = 622399, rmax = 110000, dsnl = "greensignal")
+
+
+
+
+dsn
+fnl
+fnpath
+dbn
+rmax
+cmax,ngsm.block,verbose
+
 
 
 
