@@ -214,43 +214,36 @@ fnl <- c("redsignal_1607018051_0-0-2.mdat.compilation",
 
 make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
     ts = "1607018051", mdpath = "mdpost_all-gsm-md.rda", fnpath = read.path, fnl = fnl,
-    ngsm.block = 60, cmax = 622399, rmax = 110000)
+    ngsm.block = 60, cmax = 622399, rmax = 50460)
 
 fnl <- "greensignal_1607018051_0-0-2.mdat.compilation"
 make_h5db_rg(dbfnstem = "remethdb", dbpath = write.path, version = "0.0.2", 
     ts = "1607018051", mdpath = NULL, fnpath=read.path, fnl=fnl,
-    ngsm.block = 60, cmax = 622399, rmax = 110000, dsnl = "greensignal")
+    ngsm.block = 60, cmax = 622399, rmax = 50460, dsnl = "greensignal")
 
 # h5se rgset
-
 # rgset -- h5se file
 make_h5se_rg(max.sample = 50460, platform = "hm450k", version = "0.0.2", 
     ts = 1607018051, dbn = "remethdb_1607018051_0-0-2.h5", 
     newfnstem = "remethdb_h5se-rg")
 
 
-
-
-
-
 # genomic methyl set -- hdf5 db
 make_h5_gm(dbn = "remethdb_h5se-rg_hm450k_0-0-2_1607018051", version = "0.0.2", 
-    ts = 1607018051, num.samp = 52000, blocksize = 65, platform = "hm450k", 
+    ts = 1607018051, num.samp = 50401, blocksize = 50, platform = "hm450k", 
     newfnstem = "remethdb_h5-gm", verbose = TRUE, replace.opt = TRUE)
-
-
-
-
-
-
-
-
-
 
 # genomic ranges set -- hdf5 db
 make_h5_gr(dbn = "remethdb_h5se-rg_hm450k_0-0-2_1607018051", version = "0.0.2", 
-    ts = 1607018051, num.samp = 52000, blocksize = 65, platform = "hm450k", 
+    ts = 1607018051, num.samp = 50401, blocksize = 10, platform = "hm450k", 
     newfnstem = "remethdb_h5-gr", verbose = TRUE, replace.opt = TRUE)
+
+
+
+
+
+
+
 
 
 # genomic methyl set -- h5se file

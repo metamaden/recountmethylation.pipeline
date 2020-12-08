@@ -619,7 +619,7 @@ make_h5_gr <- function(dbn, version, ts, num.samp, blocksize = 65, verbose=TRUE,
   platform=c("hm450k","epic"),newfnstem="remethdb_h5-gr",replace.opt=TRUE){
   if(platform == "hm450k"){num.assays = 485512} else if(platform == "epic"){
   num.assays = 866836} else{stop("Error, didn't recognize platform.")}
-  rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn)
+  rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn);gr <- preprocessNoob(rg)
   h5dbn <- paste(newfnstem, platform, gsub("\\.", "-", version), ts, sep = "_")
   message("Making h5 db: ", h5dbn);h5dbn <- paste0(c(h5dbn, "h5"), collapse=".")
   if(!file.exists(h5dbn)){rhdf5::h5createFile(h5dbn)}
@@ -635,9 +635,8 @@ make_h5_gr <- function(dbn, version, ts, num.samp, blocksize = 65, verbose=TRUE,
   rhdf5::h5createDataset(h5dbn, "rownames", dims = list(num.assays), 
     maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
     level = 5, chunk = c(1000))
-  rhdf5::h5write(rownames(gr),file=h5dbn,name="rownames",
-          index=list(1:num.assays))
-  blocks <- getblocks(ncol(rg), bsize = blocksize)
+  rhdf5::h5write(rownames(gr),file=h5dbn,name="rownames",index=list(1:num.assays))
+  blocks <- getblocks(ncol(gr), bsize = blocksize)
   message("Writing data blocks.");t1 <- Sys.time()
   for(b in 1:length(blocks)){cindices <- blocks[[b]];
       if(verbose){message("Beginning block ", b, "/", length(blocks), "...")} 
