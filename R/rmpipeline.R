@@ -474,7 +474,7 @@ se_addpheno <- function(phenopath, se, pdat = NULL, verbose = TRUE){
 #' in the rownames vector that is read.
 #' @param platform Array platform (either "hm450k" or "epic").
 #' @param version The data file version.
-#' @param ts Data file NTP timestamp (integer).
+#' @param ts Data file NTP timestamp (character).
 #' @param dbn Name/path of HDF5 database file.
 #' @param newfnstem File name stem for new database file.
 #' @param dsnv Table names vector.
@@ -490,7 +490,7 @@ se_addpheno <- function(phenopath, se, pdat = NULL, verbose = TRUE){
 #' @returns New h5se object.
 #' @export
 make_h5se_rg <- function(max.sample, platform = c("hm450k", "epic"),
-  version = "0.0.1", ts = 1590090412, dbn = "remethdb_1590090412_0-0-1.h5", 
+  version = "0.0.1", ts = "1590090412", dbn = "remethdb_1590090412_0-0-1.h5", 
   newfnstem = "remethdb_h5se-rg", dsnv = c("redsignal", "greensignal"),
   add.metadata=FALSE,mdpath=NULL,dsn.md="mdpost",
   dsn.md.cn=paste0(dsn.md,".colnames"), verbose = TRUE, replace.opt = TRUE,
