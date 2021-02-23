@@ -218,13 +218,11 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 #' @param grns.path Path to new grn signal data table.
 #' @param min.cols Minimum data columns to write DNAm data (integer, )
 #' @param sepval Separator symbol for data tables.
-#' @param num.assays Number of assays to expect before writing (1052641 for 
-#' epic, 622399 for hm450k).
 #' @param verbose Whether to include verbose messages.
 #' @return NULL, writes data chunks as side effect
 #' @export
 dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path, 
-  num.assays = c(622399, 1052641), sepval = " ", verbose = TRUE){
+                        sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};
   pathl=unique(file.path(idatspath, hlinkv))
   rgi=try(minfi::read.metharray(pathl,force=TRUE))
@@ -234,8 +232,7 @@ dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path,
     if(length(probesv.out) > 0){
       outdat <- rep(rep("NA", length(probesv.out)), ncol(red.dat))
       outm <- matrix(outdat, ncol = ncol(red.dat));rownames(outm) <- probesv.out
-      red.dat <- rbind(red.dat, outm); grn.dat <- rbind(grn.dat, outm)
-    }
+      red.dat <- rbind(red.dat, outm); grn.dat <- rbind(grn.dat, outm)}
     reorder.red <- order(match(rownames(red.dat), probesv))
     reorder.grn <- order(match(rownames(grn.dat), probesv))
     rdat.order <- red.dat[reorder.red,, drop = FALSE]
@@ -296,13 +293,10 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 #' @param dbpath Database file path to write to.
 #' @param version Version of new database file.
 #' @param ts Timestamp of new database file.
+#' @param platform
 #' @param fnl Vector of signal tables containing data to be added.
 #' @param fnpath Path to dir containing files in fnl.
 #' @param dsnl Vector of data set names in HDF5 database to be populated.
-#' @param rmax Total rows to append to data sets, reflecting total samples.
-#' @param cmax Total columns to append to data sets, reflecting total assays or 
-#' probes. For raw red/grn signal, can be either 622399 (HM450K platform) or 
-#' 1052641 (EPIC platform). 
 #' @param newtables Whether to also add new data tables (noob-norm. Beta-values, 
 #' meth. and unmeth. signal).
 #' @param mdpath If addmd, the path to the metadata file to load.
@@ -313,10 +307,11 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 #' corresponding (1:1) to the files declared in fnl.
 #' @return Populates the HDF5 database
 #' @export
-make_h5db_rg <- function(dbfnstem, dbpath, version, ts, fnpath,
-  fnl, dsnl = c("redsignal", "greensignal"), rmax = 35300, 
-  cmax = c(622399, 1052641), rmoldh5 = TRUE, newtables = FALSE, mdpath = NULL,
-  ngsm.block = 50, verbose = TRUE){
+make_h5db_rg <- function(dbfnstem, dbpath, platform, version, ts, fnpath,
+                         platform = c("hm450k", "epic"), fnl, 
+                         dsnl = c("redsignal", "greensignal"), rmoldh5 = TRUE,
+                         newtables = FALSE, mdpath = NULL, ngsm.block = 50,
+                         verbose = TRUE){
   require(rhdf5);fn <- paste(dbfnstem, ts, gsub("\\.", "-", version), sep = "_")
   dbn <- file.path(dbpath, paste(fn, "h5", sep = "."))
   if(verbose){message("Making new h5 db file: ", dbn)}
@@ -330,8 +325,9 @@ make_h5db_rg <- function(dbfnstem, dbpath, version, ts, fnpath,
   # add red and grn signal tables
   if(verbose){message("Adding and populating data tables to HDF5 database")}
   for(di in seq(length(dsnl))){
-    h5_add_tables(dsn = dsnl[di], fnl = fnl, fnpath = fnpath, dbn = dbn,
-      rmax = rmax, cmax = cmax, ngsm.block = ngsm.block, verbose = verbose)}
+    h5_add_tables(dsn = dsnl[di], fnl = fnl, platform = platform, 
+                  fnpath = fnpath, dbn = dbn, ngsm.block = ngsm.block, 
+                  verbose = verbose)}
   if(verbose){message("Finished adding red and green channel data.")}
   if(!is.null(mdpath)){if(verbose){message("Adding sample metadata to db...")}
     h5_addmd(dbn, mdpath, verbose = verbose)
@@ -343,16 +339,26 @@ make_h5db_rg <- function(dbfnstem, dbpath, version, ts, fnpath,
 #' @examples
 #' #
 #' @export
-h5_add_tables = function(dsn,fnl,fnpath,dbn,rmax,cmax,ngsm.block,verbose){
+h5_add_tables = function(dsn, fnl, platform, fnpath, dbn, rmax, cmax, 
+                         ngsm.block, verbose){
   if(dsn == "redsignal"){fnread = fnl[grepl("red", fnl)]}else{
     fnread <- fnl[grepl("green", fnl)]}
   if(verbose){message("for dsn ", dsn, " using fnread ", fnread, "...")}
-  tt<-Sys.time();cnn=paste0(dsn,".colnames");rnn=paste0(dsn, ".rownames")
-  rn=cn=c();con<-file(paste(fnpath, fnread, sep = "/"), "r")
+  cnn = paste0(dsn,".colnames"); rnn = paste0(dsn, ".rownames"); rn = cn = c()
+  if(verbose){message("Getting dims...")}
+  cmax <- ifelse(platform == "hm450k", 622399, ifelse(platform == "epic", 
+                                                      1052641, "NA"))
+  if(cmax == "NA"){readline(prompt=paste0("Couldn't generate num. assays",
+                                          " for platform. Enter cmax ",
+                                          "(num. assays):"))}
+  con <- file(paste(fnpath, fnread, sep = "/"), "r")
+  rmax <- length(unlist(strsplit(readLines(con, n = 1), " ")))-1
   if(verbose){"Making dataset...."}
-  rhdf5::h5createDataset(dbn,dsn,dims=c(rmax, cmax),
-                         maxdims=c(rhdf5::H5Sunlimited(),rhdf5::H5Sunlimited()),
-                         storage.mode="double",level=5,chunk=c(100, 5000))
+  rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax), 
+                         storage.mode = "double", level = 5,
+                         maxdims = c(rhdf5::H5Sunlimited(),
+                                     rhdf5::H5Sunlimited()),
+                         chunk = c(100, 5000))
   if(verbose){message("Adding colnames...")}
   cn = unlist(strsplit(readLines(con, n = 1), " ")); cn = cn[2:length(cn)]
   cn = gsub("\n", "",gsub('\"', '', cn[1:cmax]))
@@ -365,6 +371,7 @@ h5_add_tables = function(dsn,fnl,fnpath,dbn,rmax,cmax,ngsm.block,verbose){
         level = 5, chunk = c(20), size = 256)
   if(verbose){message("Working on sample indices...")}
   # nri = getblocks(rmax, ngsm.block)
+  tt <- Sys.time()
   for(ni in seq(1, rmax, ngsm.block)){if(verbose){message("Reading lines...")}
     start.index <- ni; end.index <- ni + ngsm.block -1
     dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
