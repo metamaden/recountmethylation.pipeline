@@ -1,4 +1,4 @@
-Package: rmpipeline
+Package: recountmethylation.pipeline
 Version: 0.0.1
 Title: Process DNAm array IDATs into database files
 Authors@R: person(c("Sean", "K"), "Maden", role = c("cre", "aut"),

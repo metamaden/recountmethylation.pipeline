@@ -10,7 +10,6 @@ dt_write_rg(
   idatspath,
   reds.path,
   grns.path,
-  num.assays = c(622399, 1052641),
   sepval = " ",
   verbose = TRUE
 )
@@ -25,9 +24,6 @@ dt_write_rg(
 \item{reds.path}{Path to new red signal data table.}
 
 \item{grns.path}{Path to new grn signal data table.}
-
-\item{num.assays}{Number of assays to expect before writing (1052641 for 
-epic, 622399 for hm450k).}
 
 \item{sepval}{Separator symbol for data tables.}
 

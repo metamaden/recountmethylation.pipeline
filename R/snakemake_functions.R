@@ -7,6 +7,8 @@
 # instance metadata
 #------------------
 
+# library(recountmethylation.pipeline)
+
 #' Get new instance metadata
 #'
 #' Generates the new metadata, including version and timestamp, for the
@@ -15,7 +17,9 @@
 #' @param instdir Path to directory to contain all instance metadata.
 #' @return NULL, produces the instance metadata file as side effect.
 #' @export
-new_instance_md <- function(instdir = file.path("recount-methylation-files", "metadata")){
+new_instance_md <- function(files.dname = "recount-methylation-files",
+                            md.dname = "metadata"){
+  instdir <- file.path(files.dname, md.dname)
   if(!dir.exists(instdir)){message("Making instdir: ", instdir)
     dir.create(instdir)}
   message("Provide version:"); version <- readLines("stdin", n = 1)
@@ -48,7 +52,7 @@ new_instance_md <- function(instdir = file.path("recount-methylation-files", "me
 #' @param instdir Path to directory to contain all instance metadata.
 #' @return Instance metadata as a list containing the version and timestamp.
 #' @export
-get_data_md() <- function(instdir = "rmp_instance"){
+get_data_md <- function(instdir = "rmp_instance"){
   message("Getting metadata..."); sdv <- as.numeric(list.files(instdir))
   sdv.max <- as.character(sdv[sdv == max(sdv)])
   md.fn <- list.files(file.path(instdir, sdv.max))
@@ -107,11 +111,13 @@ check_h5_database <- function(comppath = file.path("recount-methylation-files",
 get_rg_dtables <- function(files.dname = "recount-methylation-files",
                            comp.dname = "compilations"){
   comp.dpath <- file.path(files.dname, comp.dname)
-  if(!dir.exists(comp.dpath)){stop("Error, didn't find compilations dir ", comp.dpath)}
+  if(!dir.exists(comp.dpath)){
+    message("Making new compilations dir: ", comp.dpath);dir.create(comp.dpath)}
   message("Handling metadata options...")
   md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]]; 
+  platform <- accinfo[["platform_name"]]
+  message("Using platform ", platform, "...")
   version <- md[["version"]]; ts <- md[["timestamp"]]
   dtables_rg(version, platform = platform, ts, destpath = comp.dpath)
   return(NULL)
@@ -131,11 +137,15 @@ get_rg_dtables <- function(files.dname = "recount-methylation-files",
 get_h5db_rg <- function(files.dpath = "recount-methylation-files", 
                         comp.dname = "compilations", ngsm.block = 50){
   comp.dpath <- file.path(files.dpath, comp.dname)
-  if(!dir.exists(comp.dpath)){stop("Error, didn't find compilations dir ", comp.dpath)}
+  if(!dir.exists(comp.dpath)){stop("Error, didn't find compilations dir ", 
+                                   comp.dpath)}
   message("Handling metadata options...")
-  md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
+  md <- rmp_handle_metadata(); 
+  if(md == "NA"){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]]
+  message("Using platform: ", platform)
   message("Checking for signal compilation tables...")
   vform <- gsub("\\.", "-", version)
   lfv <- list.files(comp.dpath);

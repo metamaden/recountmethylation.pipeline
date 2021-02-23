@@ -89,7 +89,7 @@ dtables_rg <- function(platform = c("hm450k", "epic"), version, timestamp,
     "files", "mdata", "compilations")){
   idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
   hlinkv <- idatinfo[["hlinkv"]]; gsmu <- idatinfo[["gsmu"]]
-  if(verbose){message("Found ", length(gsmu), " GSM IDs with valid idats.")}
+  if(verbose){message("Found ", length(gsmu), " GSM IDs with valid IDATs.")}
   gsmii <- getblocks(length(gsmu), gsmint) # get id vectors list
   if(verbose){message("Making new data tables...")}
   dtinfo <- dt_makefiles(platform = platform, hlinkv = hlinkv, 
@@ -106,9 +106,8 @@ dtables_rg <- function(platform = c("hm450k", "epic"), version, timestamp,
         } else(stop("Error, invalid platform provided."))
     tt <- Sys.time(); probesv <- rownames(rgi)
     for(i in 1:length(gsmii)){hlinkvi <- hlinkv[gsmii[[i]]]
-      dt_write_rg(probesv = probesv, hlinkv = hlinkvi, 
-        idatspath = idatspath, reds.path = red.path, grns.path = grn.path, 
-        verbose = verbose, num.assays = num.assays)
+      dt_write_rg(probesv = probesv, hlinkv = hlinkvi, idatspath = idatspath, 
+                  reds.path = red.path, grns.path = grn.path, verbose=verbose)
       if(verbose){message("Finished chunk ", i , " time: ", Sys.time() - tt)}
     }
   } else{stop("Problem encountered handling data tables.")}
@@ -307,7 +306,7 @@ h5_addmd = function(dbn, mdpath, dsn = "mdpost", verbose = TRUE){
 #' corresponding (1:1) to the files declared in fnl.
 #' @return Populates the HDF5 database
 #' @export
-make_h5db_rg <- function(dbfnstem, dbpath, platform, version, ts, fnpath,
+make_h5db_rg <- function(dbfnstem, dbpath, version, ts, fnpath,
                          platform = c("hm450k", "epic"), fnl, 
                          dsnl = c("redsignal", "greensignal"), rmoldh5 = TRUE,
                          newtables = FALSE, mdpath = NULL, ngsm.block = 50,
@@ -322,8 +321,7 @@ make_h5db_rg <- function(dbfnstem, dbpath, platform, version, ts, fnpath,
         silent = TRUE))
       suppressMessages(try(rhdf5::h5delete(dbn, paste0(d, ".rownames")), 
         silent = TRUE))}}
-  # add red and grn signal tables
-  if(verbose){message("Adding and populating data tables to HDF5 database")}
+  if(verbose){message("Adding red and green signal data tables to HDF5 db...")}
   for(di in seq(length(dsnl))){
     h5_add_tables(dsn = dsnl[di], fnl = fnl, platform = platform, 
                   fnpath = fnpath, dbn = dbn, ngsm.block = ngsm.block, 
@@ -352,7 +350,7 @@ h5_add_tables = function(dsn, fnl, platform, fnpath, dbn, rmax, cmax,
                                           " for platform. Enter cmax ",
                                           "(num. assays):"))}
   con <- file(paste(fnpath, fnread, sep = "/"), "r")
-  rmax <- length(unlist(strsplit(readLines(con, n = 1), " ")))-1
+  rmax <- length(readLines(con)) - 1; close(con)
   if(verbose){"Making dataset...."}
   rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax), 
                          storage.mode = "double", level = 5,
@@ -360,8 +358,9 @@ h5_add_tables = function(dsn, fnl, platform, fnpath, dbn, rmax, cmax,
                                      rhdf5::H5Sunlimited()),
                          chunk = c(100, 5000))
   if(verbose){message("Adding colnames...")}
-  cn = unlist(strsplit(readLines(con, n = 1), " ")); cn = cn[2:length(cn)]
-  cn = gsub("\n", "",gsub('\"', '', cn[1:cmax]))
+  con <- file(paste(fnpath, fnread, sep = "/"), "r")
+  cn <- unlist(strsplit(readLines(con, n = 1), " ")); cn <- cn[2:length(cn)]
+  cn <- gsub("\n", "",gsub('\"', '', cn[1:cmax]))
   rhdf5::h5createDataset(dbn,cnn,dims=length(cn),storage.mode="character", 
     maxdims = c(rhdf5::H5Sunlimited()), level = 5, chunk = c(20), size = 256)
   rhdf5::h5write(cn, file = dbn, name = cnn, index = list(1:length(cn)))
@@ -370,11 +369,11 @@ h5_add_tables = function(dsn, fnl, platform, fnpath, dbn, rmax, cmax,
         maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", 
         level = 5, chunk = c(20), size = 256)
   if(verbose){message("Working on sample indices...")}
-  # nri = getblocks(rmax, ngsm.block)
-  tt <- Sys.time()
-  for(ni in seq(1, rmax, ngsm.block)){if(verbose){message("Reading lines...")}
-    start.index <- ni; end.index <- ni + ngsm.block -1
-    dati = matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
+  nri <- getblocks(rmax, ngsm.block);tt <- Sys.time()
+  for(bi in seq(length(nri))){
+    ni <- nri[[bi]];start.index <- min(ni); end.index <- max(ni)
+    if(verbose){message("Reading lines...")}
+    dati <- matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
       nrow = ngsm.block, byrow = TRUE)
     dati.filt <- dati[,c(2:ncol(dati))]; class(dati.filt) <- "numeric"
     wt <- try(rhdf5::h5write(dati.filt, file = dbn, name = dsn,

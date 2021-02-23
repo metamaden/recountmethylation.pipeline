@@ -6,4 +6,4 @@
 
 library(recountmethylation.pipeline)
 
-suppressMessages(get_rg_dtables())
+get_rg_dtables()

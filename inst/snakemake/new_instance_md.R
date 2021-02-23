@@ -6,4 +6,4 @@
 
 library(recountmethylation.pipeline)
 
-suppressMessages(new_instance_md())
+new_instance_md()

@@ -384,11 +384,11 @@ rmp_handle_metadata <- function(files.dname = "recount-methylation-files",
 #' @return Platform info as list contianing the accession ID and name.
 #' @export
 rmp_handle_platform <- function(settings.fname = "settings.py",
-                                src.path=file.path("recountmethylation_server", 
+                                src.path=file.path("recountmethylation_server",
                                                      "src")){
   settings.fpath = file.path(src.path, settings.fname)
   if(!file.exists(settings.fpath)){stop("Error, couldn't find ",settings.fn)}
-  accid <- gsub(" |.* '|'", "", readLines(settings.fpath, n = 31)[31])
+  accid <- gsub(" |.* '|'", "", readLines(settings.fpath, n = 25)[25])
   pname <- ifelse(accid == "GPL13534", "hm450k",
                   ifelse(accid == "GPL21145", "epic-hm850k",
                          ifelse(accid == "GPL8490", "hm27k", "NA")))

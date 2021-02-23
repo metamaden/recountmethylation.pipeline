@@ -8,7 +8,7 @@ make_h5se_rg(
   max.sample,
   platform = c("hm450k", "epic"),
   version = "0.0.1",
-  ts = 1590090412,
+  ts = "1590090412",
   dbn = "remethdb_1590090412_0-0-1.h5",
   newfnstem = "remethdb_h5se-rg",
   dsnv = c("redsignal", "greensignal"),
@@ -34,7 +34,7 @@ in the rownames vector that is read.}
 
 \item{version}{The data file version.}
 
-\item{ts}{Data file NTP timestamp (integer).}
+\item{ts}{Data file NTP timestamp (character).}
 
 \item{dbn}{Name/path of HDF5 database file.}
 
