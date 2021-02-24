@@ -181,7 +181,7 @@ get_h5se_rg <- function(files.dpath = "recount-methylation-files",
   platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 RGChannelSet file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
-  lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*\\.h5$",lfv)]
+  lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_rg.*",lfv)]
   if(length(lfv) == 0){
     stop("Couldn't find HDF5 rg database file at: ", comp.dpath, ".\n",
          "Try running rule `get_h5db_rg` first.")
@@ -243,8 +243,7 @@ get_h5se_gm <- function(files.dpath = "recount-methylation-files",
   platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 MethylSet ('gm') database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
-  lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata
-  lfv <- lfv[grepl(".*gm.*", lfv) & grepl(".*\\.h5$", lfv)];
+  lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_gm.*",lfv)]
   if(length(lfv) == 0){
     stop("Couldn't find HDF5 gm database file at: ", comp.dpath, ".\n",
          "Try running rule `get_h5_gm` first.")
@@ -306,8 +305,7 @@ get_h5se_gr <- function(files.dpath = "recount-methylation-files",
   platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 `gr` set database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
-  lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata
-  lfv <- lfv[grepl(".*gr.*", lfv) & grepl(".*\\.h5$", lfv)];
+  lfv <-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_gr.*",lfv)]
   if(length(lfv) == 0){
     stop("Couldn't find HDF5 gr database file at: ", comp.dpath, ".\n",
          "Try running rule `get_h5_gr` first.")

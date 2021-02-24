@@ -356,7 +356,7 @@ h5_add_tables <- function(dsn, fnl, platform, fnpath, dbn, ngsm.block,verbose){
   if(cmax == "NA"){readline(prompt=paste0("Couldn't generate num. assays",
                                           " for platform. Enter cmax ",
                                           "(num. assays):"))}
-  con <- file(paste(fnpath, fnread, sep = "/"), "r")
+  con <- file(file.path(fnpath, fnread), "r")
   rmax <- length(readLines(con)) - 1; close(con)
   if(verbose){"Making dataset...."}
   rhdf5::h5createDataset(dbn, dsn, dims = c(rmax, cmax), 
@@ -365,7 +365,7 @@ h5_add_tables <- function(dsn, fnl, platform, fnpath, dbn, ngsm.block,verbose){
                                      rhdf5::H5Sunlimited()),
                          chunk = c(100, 5000))
   if(verbose){message("Adding colnames...")}
-  con <- file(paste(fnpath, fnread, sep = "/"), "r")
+  con <- file(file.path(fnpath, fnread), "r")
   cn <- unlist(strsplit(readLines(con, n = 1), " ")); cn <- cn[2:length(cn)]
   cn <- gsub("\n", "",gsub('\"', '', cn[1:cmax]))
   rhdf5::h5createDataset(dbn,cnn,dims=length(cn),storage.mode="character", 
@@ -380,8 +380,8 @@ h5_add_tables <- function(dsn, fnl, platform, fnpath, dbn, ngsm.block,verbose){
   for(bi in seq(length(nri))){
     ni <- nri[[bi]];start.index <- min(ni); end.index <- max(ni)
     if(verbose){message("Reading lines...")}
-    dati <- matrix(unlist(strsplit(readLines(con, n = ngsm.block), " ")),
-      nrow = ngsm.block, byrow = TRUE)
+    dati <- matrix(unlist(strsplit(readLines(con, n = length(ni)), " ")),
+      nrow = length(ni), byrow = TRUE)
     dati.filt <- dati[,c(2:ncol(dati))]; class(dati.filt) <- "numeric"
     wt <- try(rhdf5::h5write(dati.filt, file = dbn, name = dsn,
         index = list(start.index:end.index, 1:cmax)))
@@ -592,13 +592,12 @@ make_h5_gm <- function(dbn, version, ts, blocksize = 65,
   for(b in 2:length(blocks)){
     cindices <- blocks[[b]]; gm <- minfi::preprocessRaw(rg[,cindices])
     meth<-as.matrix(minfi::getMeth(gm));unmeth<-as.matrix(minfi::getUnmeth(gm))
-    write.indices <- cindices[1]:cindices[length(cindices)]
-    lindex <- list(1:num.assays, write.indices)
-    rhdf5::h5write(meth, index = lindex, file = h5dbn, name = "meth")
-    rhdf5::h5write(unmeth, index = lindex, file = h5dbn, name = "unmeth")
-    if(verbose){message("Finished block ", b, ", time = ", Sys.time() - t1)}
-  };message("Finished writing data blocks. Returning h5 name.")
-  return(h5dbn)
+    rhdf5::h5write(meth, file = h5dbn, name = "meth",
+                   index = list(1:num.assays, cindices))
+    rhdf5::h5write(unmeth,file = h5dbn, name = "unmeth",
+                   index = list(1:num.assays, cindices))
+    if(verbose){message("Finished block ",b,", time = ",Sys.time()-t1)}
+  };message("Finished writing data blocks. Returning h5 path.");return(h5dbn)
 }
 
 
@@ -608,12 +607,12 @@ make_h5_gm <- function(dbn, version, ts, blocksize = 65,
 #' Makes an HDF5 h5 file containing noob-normalized Beta-values, including
 #' rows and columns as separate datasets.
 #' @param dbn Path to the RGChannelSet H5SE data directory.
-#' @param files.dname Files dir name for instance ("recount-methylation-files")
-#' @param comp.dname Compilations dir name, located in files.dname 
 #' @param version Version for new h5 file.
 #' @param ts Timestamp for new h5 file.
 #' @param blocksize Size of blocks/number of samples to process at a time 
 #' (default 65).
+#' @param files.dname Files dir name for instance ("recount-methylation-files")
+#' @param comp.dname Compilations dir name, located in files.dname 
 #' @param platform Array platform (either "hm450k" or "epic").
 #' @param newfnstem New filename stem for h5 file.
 #' @param verbose Whether to return verbose messages (default TRUE).
@@ -624,12 +623,12 @@ make_h5_gm <- function(dbn, version, ts, blocksize = 65,
 make_h5_gr <- function(dbn, version, ts, blocksize = 65, 
                        files.dname = "recount-methylation-files",
                        comp.dname = "compilations",
-                       verbose=TRUE, platform=c("hm450k","epic"),
-                       newfnstem="remethdb",replace.opt=TRUE){
+                       verbose = TRUE, platform = c("hm450k", "epic"),
+                       newfnstem = "remethdb", replace.opt = TRUE){
   if(platform == "hm450k"){num.assays = 485512} else if(platform == "epic"){
   num.assays = 866836} else{stop("Error, didn't recognize platform.")}
   rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn)
-  num.samp <- ncol(rg);gr <- preprocessNoob(rg)
+  num.samp <- ncol(rg); # gr <- preprocessNoob(rg)
   h5dbn <- paste(newfnstem, platform, "h5", "gr", ts,
                  gsub("\\.", "-", version), sep = "_")
   h5dbn <- file.path(files.dname, comp.dname, h5dbn)
@@ -645,38 +644,40 @@ make_h5_gr <- function(dbn, version, ts, blocksize = 65,
   level = 5, chunk = c(1000))
   if(verbose){message("Making, writing rownames data table...")}
   rhdf5::h5createDataset(h5dbn, "rownames", dims = list(num.assays), 
-    maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256, 
+    maxdims = c(rhdf5::H5Sunlimited()), storage.mode = "character", size = 256,
     level = 5, chunk = c(1000))
-  rhdf5::h5write(rownames(gr),file=h5dbn,name="rownames",index=list(1:num.assays))
-  blocks <- getblocks(ncol(gr), bsize = blocksize)
-  message("Writing data blocks.");t1 <- Sys.time()
-  for(b in 1:length(blocks)){cindices <- blocks[[b]];
-      if(verbose){message("Beginning block ", b, "/", length(blocks), "...")} 
-      lindex <- list(row.indices, cindices);rgi <- rg[,cindices]
-      tryCatch(gr <- minfi::preprocessNoob(rgi),
-          error = function(e){
-              message("Error with preprocessNoob, trying samples in block...")
-              for(si in seq(length(cindices))){
-                  message("Attempting to write data for sample ", si, "...")
-                  lindex <- list(row.indices, cindices[si])
-                  tryCatch(gr <- minfi::preprocessNoob(rgi[,si]),
-                      error = function(e){message("Error at ",si,", skipping...")}
-                  )
-                  if(class(gr) == "MethylSet"){
-                      nbeta <- as.matrix(minfi::getBeta(gr));class(nbeta)<-"numeric"
-                      rhdf5::h5write(nbeta,file=h5dbn,name="noobbeta",index=lindex)
-                      message("Wrote data for sample ", si, ", continuing...")
-                  }
-              }
-          }
-      )
-      if(class(gr) == "MethylSet"){
-          nbeta <- as.matrix(minfi::getBeta(gr));class(nbeta) <- "numeric"
-          rhdf5::h5write(nbeta, file=h5dbn, name="noobbeta", index=lindex)
-      }
-      if(verbose){message("Finished block ", b, "/", length(blocks), 
-          ", time = ", Sys.time() - t1)}
-  };message("Finished writing data blocks. Returning h5 name.");return(h5dbn)
+  if(verbose){message("Getting blocks of sample indices.")}
+  blocks <- getblocks(ncol(rg), bsize = blocksize)
+  cindices <- blocks[[1]]; rgi <- rg[, cindices]
+  redi<-as.matrix(minfi::getRed(rgi));grni<-as.matrix(minfi::getGreen(rgi))
+  class(redi) <- class(grni) <- "numeric"
+  rgii <- minfi::RGChannelSet(Red = redi, Green = grni, 
+                              annotation = annotation(rgi))
+  gmi <- minfi::preprocessNoob(rgii)
+  nbm <- as.matrix(minfi::getBeta(gmi)); class(nbm) <- "numeric"
+  if(verbose){message("Writing first data blocks...")}
+  rhdf5::h5write(nbm, file = h5dbn, name = "noobbeta", 
+                 index = list(1:num.assays, cindices))
+  if(verbose){message("Writing rows and cols.")}
+  rhdf5::h5write(colnames(rg), file = h5dbn, name = "colnames", 
+                 index = list(1:ncol(rg)))
+  rhdf5::h5write(rownames(gmi), file = h5dbn, name = "rownames", 
+                 index = list(1:num.assays))
+  if(length(blocks) > 1){
+    message("Writing next data blocks...");t1 <- Sys.time()
+    for(b in 2:length(blocks)){
+      cindices <- blocks[[b]]; rgi <- rg[,cindices]
+      redi<-as.matrix(minfi::getRed(rgi));grni<-as.matrix(minfi::getGreen(rgi))
+      class(redi) <- class(grni) <- "numeric"
+      rgii <- minfi::RGChannelSet(Red = redi, Green = grni, 
+                                  annotation = annotation(rgi))
+      gmi <- minfi::preprocessNoob(rgii)
+      nbm <- as.matrix(minfi::getBeta(gmi)); class(nbm) <- "numeric"
+      rhdf5::h5write(nbm, file = h5dbn, name = "noobbeta",
+                     index = list(1:num.assays, cindices))
+      if(verbose){message("Finished block ",b,", time = ",Sys.time()-t1)}
+    }};message("Finished writing data blocks. Returning h5 path.")
+  return(h5dbn)
 }
 
 #' Make an H5SE MethySet object from a MethySet HDF5 database file
@@ -775,7 +776,7 @@ make_h5se_gr <- function(version, ts, dbn,
     ms <- minfi::mapToGenome(get(data("MsetEx")))
     } else if(platform == "epic"){require(minfiDataEPIC)
       ms <- minfi::mapToGenome(get(data("MsetEPIC")))
-      } else{stop("Error, didn't recognize platform.")}
+      } else{stop("Error, provided platform isn't supported.")}
   anno <- minfi::annotation(ms);gr <- GenomicRanges::granges(ms)
   message("Reading datasets.");nbeta <- HDF5Array::HDF5Array(dbn, "noobbeta")
   cn<-rhdf5::h5read(dbn,"colnames");rn<-rhdf5::h5read(dbn,"rownames")
