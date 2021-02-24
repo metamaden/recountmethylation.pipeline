@@ -44,32 +44,6 @@ new_instance_md <- function(files.dname = "recount-methylation-files",
   save(md, file = md.path); return(NULL)
 }
 
-#' Retrieve existing instance metadata
-#'
-#' User dialogue to handle instance metadata previously generated 
-#' with `new_instance_md()`.
-#'
-#' @param instdir Path to directory to contain all instance metadata.
-#' @return Instance metadata as a list containing the version and timestamp.
-#' @export
-get_data_md <- function(instdir = "rmp_instance"){
-  message("Getting metadata..."); sdv <- as.numeric(list.files(instdir))
-  sdv.max <- as.character(sdv[sdv == max(sdv)])
-  md.fn <- list.files(file.path(instdir, sdv.max))
-  md.fn <- md.fn[grepl("metadata.*", md.fn)[1]]
-  message("(Y/N) Use detected md file ", md.fn, "?")
-  mdopt <- readLines("stdin", n = 1)
-  if(mdopt %in% c("y", "Y", "yes", "Yes", "YES")){
-    mdpath <- file.path("rmp_instance", sdv.max, md.fn)
-  } else if(mdopt %in% c("n", "N", "No", "no", "NO")){
-    message("Provide mdpath: "); mdpath <- readLines("stdin", n = 1)
-  } else{stop("Error,invalid input")}
-  if(!file.exists(mdpath)){stop("Error, mdpath doesn't exist: ", mdpath)}
-  message("Loading metadata from file...")
-  md <- get(load(mdpath)); version <- md$version; ts <- md$timestamp
-  return(md)
-}
-
 #' Check DNAm data contained in an HDF5 database
 #'
 #' Checks DNAm data stored in an HDF5 database. Uses a GEO lookup to grab 

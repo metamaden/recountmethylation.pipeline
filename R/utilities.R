@@ -361,7 +361,7 @@ match1to2 <- function(d1, d2, ci1 = 2, ci2 = 1){
 rmp_handle_metadata <- function(files.dname = "recount-methylation-files",
                                 md.dname = "metadata"){
   md.dpath <- file.path(files.dname, md.dname)
-  if(!dir.exists(md.dpath)){stop("Error, could find dir ", md.dpath,"...")}
+  if(!dir.exists(md.dpath)){stop("Couldn't find dir ", md.dpath,"...")}
   lfmd <- list.files(md.dpath); lfmd <- lfmd[grepl("metadata", lfmd)]
   if(length(lfmd) > 0){
     ts <- as.numeric(gsub(".*_|\\.rda", "", lfmd)); ts.max <- max(ts)
@@ -370,7 +370,7 @@ rmp_handle_metadata <- function(files.dname = "recount-methylation-files",
     message("Using metadata at ", md.fpath);md <- get(load(md.fpath))
     return(md)
   } else{
-    stop("Error, couldn't find metadata for this instance.", 
+    stop("Couldn't find metadata for this instance.", 
          " Try running the `new_inst_md` rule first.")}
   return(NULL)
 }
@@ -387,7 +387,7 @@ rmp_handle_platform <- function(settings.fname = "settings.py",
                                 src.path=file.path("recountmethylation_server",
                                                      "src")){
   settings.fpath = file.path(src.path, settings.fname)
-  if(!file.exists(settings.fpath)){stop("Error, couldn't find ",settings.fn)}
+  if(!file.exists(settings.fpath)){stop("Couldn't find ",settings.fn)}
   accid <- gsub(" |.* '|'", "", readLines(settings.fpath, n = 25)[25])
   pname <- ifelse(accid == "GPL13534", "hm450k",
                   ifelse(accid == "GPL21145", "epic-hm850k",
