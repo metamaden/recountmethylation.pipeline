@@ -9,11 +9,12 @@ make_h5_gr(
   dbn,
   version,
   ts,
-  num.samp,
   blocksize = 65,
+  files.dname = "recount-methylation-files",
+  comp.dname = "compilations",
   verbose = TRUE,
   platform = c("hm450k", "epic"),
-  newfnstem = "remethdb_h5-gr",
+  newfnstem = "remethdb",
   replace.opt = TRUE
 )
 }
@@ -24,10 +25,12 @@ make_h5_gr(
 
 \item{ts}{Timestamp for new h5 file.}
 
-\item{num.samp}{Number of samples in HDF5 dataset.}
-
 \item{blocksize}{Size of blocks/number of samples to process at a time 
 (default 65).}
+
+\item{files.dname}{Files dir name for instance ("recount-methylation-files")}
+
+\item{comp.dname}{Compilations dir name, located in files.dname}
 
 \item{verbose}{Whether to return verbose messages (default TRUE).}
 

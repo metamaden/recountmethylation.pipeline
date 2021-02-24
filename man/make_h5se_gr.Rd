@@ -5,25 +5,31 @@
 \title{Make an h5se object from an h5se gr file}
 \usage{
 make_h5se_gr(
-  dbn,
   version,
   ts,
+  dbn,
+  files.dname = "recount-methylation-files",
+  comp.dname = "compilations",
   platform = c("hm450k", "epic"),
   replaceopt = TRUE,
   verbose = TRUE,
   add.metadata = FALSE,
   pdata = NULL,
-  newdnstem = "remethdb_h5se-gr",
-  semd = list(title = "GenomicMethylSet HDF5-SummarizedExperiment object",
-    preprocessing = "Normalization with out-of-band signal (noob)")
+  newdnstem = "remethdb",
+  semd = list(title = paste0("GenomicMethylSet HDF5-", "SummarizedExperiment"),
+    preprocessing = paste0("Normalization with", " out-of-band ", "signal (noob)"))
 )
 }
 \arguments{
-\item{dbn}{Path to HDF5 database file to read data from.}
-
 \item{version}{Version for new filenames.}
 
 \item{ts}{NTP timestamp.}
+
+\item{dbn}{Path to HDF5 database file to read data from.}
+
+\item{files.dname}{Files dir name for instance ("recount-methylation-files")}
+
+\item{comp.dname}{Compilations dir name, located in files.dname}
 
 \item{replaceopt}{Whether to overwrite existing file of same name as new file
 (default = TRUE).}

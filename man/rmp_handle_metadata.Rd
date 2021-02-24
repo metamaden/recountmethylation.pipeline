@@ -9,6 +9,11 @@ rmp_handle_metadata(
   md.dname = "metadata"
 )
 }
+\arguments{
+\item{files.dname}{Instance files dir name ("recount-methylation-files").}
+
+\item{md.dname}{Metadata dir name, located in files.dname ("metadata").}
+}
 \value{
 Metadata object containing the instance version and timestamp
 }

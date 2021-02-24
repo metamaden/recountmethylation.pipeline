@@ -9,12 +9,14 @@ make_h5se_gm(
   version,
   ts,
   platform = c("hm450k", "epic"),
+  files.dname = "recount-methylation-files",
+  comp.dname = "compilations",
   replaceopt = TRUE,
   verbose = TRUE,
   add.metadata = FALSE,
   pdata = NULL,
-  newdnstem = "remethdb_h5se-gm",
-  semd = list(title = "GenomicMethylSet HDF5-SummarizedExperiment object",
+  newdnstem = "remethdb",
+  semd = list(title = paste0("GenomicMethylSet HDF5-", "SummarizedExperiment"),
     preprocessing = "raw")
 )
 }
@@ -26,6 +28,10 @@ make_h5se_gm(
 \item{ts}{NTP timestamp.}
 
 \item{platform}{Array platform (either "hm450k" or "epic").}
+
+\item{files.dname}{Files dir name for instance ("recount-methylation-files")}
+
+\item{comp.dname}{Compilations dir name, located in files.dname}
 
 \item{replaceopt}{Whether to overwrite existing file of same name as new file
 (default = TRUE).}

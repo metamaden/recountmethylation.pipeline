@@ -119,7 +119,7 @@ get_rg_dtables <- function(files.dname = "recount-methylation-files",
   platform <- accinfo[["platform_name"]]
   message("Using platform ", platform, "...")
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  dtables_rg(version, platform = platform, ts, destpath = comp.dpath)
+  dtables_rg(version, platform = platform, ts = ts, destpath = comp.dpath)
   return(NULL)
 }
 
@@ -148,9 +148,8 @@ get_h5db_rg <- function(files.dpath = "recount-methylation-files",
   message("Using platform: ", platform)
   message("Checking for signal compilation tables...")
   vform <- gsub("\\.", "-", version)
-  lfv <- list.files(comp.dpath);
-  lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata
-  lfv <- lfv[grepl("\\.mdat\\.compilation$", lfv)] # filter compilations
+  lfv <- list.files(comp.dpath);lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)]
+  lfv <- lfv[grepl("\\.compilation$", lfv)]
   lfv.grn <- lfv[grepl("^greensignal.*", lfv)]
   lfv.red <- lfv[grepl("^redsignal.*", lfv)]
   if(length(lfv.grn) == 0){stop("Error, couldn't find green compilation ",
@@ -179,15 +178,16 @@ get_h5se_rg <- function(files.dpath = "recount-methylation-files",
   md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  message("Checking for valid h5se RGChannelSet file...")
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Checking for valid HDF5 RGChannelSet file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
-  lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata
-  lfv <- lfv[grepl(".*h5se_rg.*", lfv)]; 
+  lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*\\.h5$",lfv)]
   if(length(lfv) == 0){
     stop("Couldn't find HDF5 rg database file at: ", comp.dpath, ".\n",
          "Try running rule `get_h5db_rg` first.")
   } else{message("Using HDF5 rg file: ", lfv[1])}
-  make_h5se_rg(platform = accinfo[["platform"]], version = version, ts = ts, 
+  make_h5se_rg(newfnstem = "remethdb", platform = platform, 
+               version = version, ts = ts, 
                dbn = file.path(comp.dpath, lfv[1])); return(NULL)
 }
 
@@ -208,6 +208,7 @@ get_h5db_gm <- function(files.dpath = "recount-methylation-files",
     stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for h5se RGChannelSet database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)]
@@ -239,6 +240,7 @@ get_h5se_gm <- function(files.dpath = "recount-methylation-files",
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 MethylSet ('gm') database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata
@@ -270,6 +272,7 @@ get_h5db_gr <- function(files.dpath = "recount-methylation-files",
     stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for h5se RGChannelSet database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)]
@@ -300,6 +303,7 @@ get_h5se_gr <- function(files.dpath = "recount-methylation-files",
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
   message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 `gr` set database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)] # filter on instance metadata

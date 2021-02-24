@@ -2,17 +2,18 @@
 % Please edit documentation in R/rmpipeline.R
 \name{make_h5_gm}
 \alias{make_h5_gm}
-\title{Make an HDF5 h5 file with MethylSet data, from an RGChannelSet 
+\title{Make an HDF5 db file with MethylSet data, from an RGChannelSet 
 h5se file}
 \usage{
 make_h5_gm(
   dbn,
   version,
   ts,
-  num.samp,
   blocksize = 65,
+  files.dname = "recount-methylation-files",
+  comp.dname = "compilations",
   platform = c("hm450k", "epic"),
-  newfnstem = "remethdb_h5-gm",
+  newfnstem = "remethdb",
   verbose = TRUE,
   dsv = c("meth", "unmeth"),
   replace.opt = TRUE
@@ -25,10 +26,12 @@ make_h5_gm(
 
 \item{ts}{Timestamp for new h5 file.}
 
-\item{num.samp}{Number of samples in HDF5 dataset.}
-
 \item{blocksize}{Size of blocks/number of samples to process at a time 
 (default 65).}
+
+\item{files.dname}{Files dir name for instance ("recount-methylation-files")}
+
+\item{comp.dname}{Compilations dir name, located in files.dname}
 
 \item{platform}{Array platform (either "hm450k" or "epic").}
 
@@ -42,9 +45,9 @@ make_h5_gm(
 (default TRUE).}
 }
 \value{
-Path to new h5 object.
+Path to new HDF5 object.
 }
 \description{
-Makes an HDF5 h5 database file with raw/unnormalized methylated and 
-unmethylated signal, including rows and columns as datasets.
+Makes an HDF5 db file with raw/unnormalized methylated and unmethylated 
+signal, including rows and columns as datasets.
 }

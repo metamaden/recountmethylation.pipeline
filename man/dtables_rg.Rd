@@ -7,7 +7,7 @@
 dtables_rg(
   platform = c("hm450k", "epic"),
   version,
-  timestamp,
+  ts,
   verbose = TRUE,
   gsmint = 60,
   overwrite = TRUE,
@@ -24,7 +24,7 @@ dtables_rg(
 
 \item{version}{Version of the run for data table filenames.}
 
-\item{timestamp}{NTP timestamp integer, for filenames (see get_metadata function).}
+\item{ts}{NTP timestamp integer, for filenames (see get_metadata function).}
 
 \item{verbose}{Whether to return verbose notifications.}
 

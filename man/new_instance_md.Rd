@@ -4,7 +4,10 @@
 \alias{new_instance_md}
 \title{Get new instance metadata}
 \usage{
-new_instance_md(instdir = file.path("recount-methylation-files", "metadata"))
+new_instance_md(
+  files.dname = "recount-methylation-files",
+  md.dname = "metadata"
+)
 }
 \arguments{
 \item{instdir}{Path to directory to contain all instance metadata.}

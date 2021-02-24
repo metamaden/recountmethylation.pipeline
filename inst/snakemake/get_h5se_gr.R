@@ -6,4 +6,4 @@
 
 library(recountmethylation.pipeline)
 
-suppressMessages(get_h5se_gr())
+get_h5se_gr()

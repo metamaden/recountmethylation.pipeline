@@ -354,8 +354,8 @@ match1to2 <- function(d1, d2, ci1 = 2, ci2 = 1){
 #' (e.g. using rule `new_instance_md`), which includes the version and 
 #' timestamp for the `recountmethylation` instance.
 #'
-#' @param files.dname
-#' @param md.dname
+#' @param files.dname Instance files dir name ("recount-methylation-files").
+#' @param md.dname Metadata dir name, located in files.dname ("metadata").
 #' @return Metadata object containing the instance version and timestamp
 #' @export
 rmp_handle_metadata <- function(files.dname = "recount-methylation-files",

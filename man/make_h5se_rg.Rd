@@ -5,8 +5,9 @@
 \title{make_h5se_rg}
 \usage{
 make_h5se_rg(
-  max.sample,
   platform = c("hm450k", "epic"),
+  files.dname = "recount-methylation-files",
+  comp.dname = "compilations",
   version = "0.0.1",
   ts = "1590090412",
   dbn = "remethdb_1590090412_0-0-1.h5",
@@ -20,17 +21,17 @@ make_h5se_rg(
   replace.opt = TRUE,
   dsn.rnv = c(paste0(dsnv[1], ".rownames"), paste0(dsnv[2], ".rownames")),
   dsn.cnv = c(paste0(dsnv[1], ".colnames"), paste0(dsnv[2], ".colnames")),
-  semd = list(title = "RGChannelSet HDF5-SummarizedExperiment object", preprocessing =
-    "raw")
+  semd = list(title = paste0("RGChannelSet HDF5-", "SummarizedExperiment"),
+    preprocessing = "raw")
 )
 }
 \arguments{
-\item{max.sample}{Max index of samples to write to new data (integer). Setting
-this will trim the samples on reading the HDF5 db. This should reflect the 
-final successfully written sample index, and/or the final unique sample id 
-in the rownames vector that is read.}
-
 \item{platform}{Array platform (either "hm450k" or "epic").}
+
+\item{files.dname}{Files dir name for instance ("recount-methylation-files")}
+
+\item{comp.dname}{Compilations dir name, located in files.dname 
+("compilations").}
 
 \item{version}{The data file version.}
 

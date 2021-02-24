@@ -10,9 +10,9 @@ dt_makefiles(
   idatspath,
   destpath,
   version,
-  nts,
+  ts,
   overwrite = TRUE,
-  fnstem = "mdat.compilation",
+  fnstem = "compilation",
   sepval = " ",
   verbose = TRUE
 )
@@ -29,7 +29,7 @@ dt_makefiles(
 
 \item{version}{File version information for file names.}
 
-\item{nts}{NTP timestamp integer, for filenames (see get_metadata function).}
+\item{ts}{NTP timestamp integer, for filenames (see get_metadata function).}
 
 \item{overwrite}{Whether to overwrite existing data.table files with same 
 destpath (default TRUE).}
