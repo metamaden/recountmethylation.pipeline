@@ -288,3 +288,119 @@ get_h5se_gr <- function(files.dpath = "recount-methylation-files",
   make_h5se_gr(dbn = dbn.dpath, version = version, ts = ts, platform=platform)
   return(NULL)
 }
+
+#------------------------
+# handle metadata options
+#------------------------
+
+
+#' Get mapped metadata
+#'
+#' Snakemake function to get mapped metadata for a recountmethylation instance.
+#' 
+#' @param files.dname Files dir name for instance ("recount-methylation-files")
+#' @param md.dname Metadata dir name ("metadata").
+#' @return NULL, stores new mapped metadata.
+#' @export
+get_mdmap <- function(files.dname = "recount-methylation-files", 
+                      md.dname = "metadata"){
+  message("Handling metadata options...");md <- rmp_handle_metadata()
+  if(is.null(md)){stop("Couldn't get metadata...")}
+  version <- md[["version"]]; ts <- md[["timestamp"]]
+  message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Mining sample/GSM titles...");get_jsontitle(ts = ts)
+  message("Getting study annotation tables from JSON files...")
+  suppressMessages(get_atables(ts = ts))
+  message("Performing metadata preprocessing...");md_preprocess(ts = ts)
+  md.dpath <- file.path(files.dname, md.dname); md.lf <- list.files(md.dpath)
+  mdpre.cond <- grepl(paste0(".*",ts,".*"), md.lf) & 
+    grepl(paste0("md_preprocess.*"), md.lf);mdpre.fname <- md.lf[mdpre.cond][1]
+  if(length(mdpre.fname) == 0){
+    stop("Preprocessed metadata not found at ", md.dpath, "...")
+  };mdpre <- get(load(file.path(md.dpath, mdpre.fname)))
+  message("Performing metadata postprocessing (term mapping)...")
+  suppressMessages(md_postprocess(ts = ts, mdpre = mdpre));
+  message("Completed metadata mapping. Completed files are ",
+          "located at: ", md.dpath);return(NULL)
+}
+
+#' Get DNAm-based metadata
+#'
+#' Gets DNAm-based metadata, including model-based predictions and quality 
+#' metrics.
+#'
+#' @param files.dname Files dir name for instance ("recount-methylation-files")
+#' @param md.dname Metadata dir name ("metadata"), contained at files.dname.
+#' @param comp.dname Compilations dir name ("compilations"), contained at 
+#' files.dname.
+#' @return NULL, stores new DNAm-based metadata file at md.dpath.
+#' @export
+get_mddnam <- function(files.dname = "recount-methylation-files", 
+                       md.dname = "metadata", comp.dname = "compilations"){
+  message("Handling metadata options...");md <- rmp_handle_metadata()
+  if(is.null(md)){stop("Couldn't get metadata...")}
+  version <- md[["version"]]; ts <- md[["timestamp"]]
+  message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Detecting DNAm compilations...")
+  comp.dpath <- file.path(files.dname, comp.dname)
+  comp.lf <- list.files(comp.dpath)
+  cond <- grepl(paste0(".*",ts,".*"), comp.lf) &
+    grepl(paste0(".*",gsub("\\.", "-", version),".*"), comp.lf)
+  comp.lf <- comp.lf[cond]
+  h5se.rg.fn <- comp.lf[grepl(".*h5se_rg.*", comp.lf)][1]
+  h5se.gr.fn <- comp.lf[grepl(".*h5se_gr.*", comp.lf)][1]
+  h5se.gm.fn <- comp.lf[grepl(".*h5se_gm.*", comp.lf)][1]
+  if(length(h5se.rg.fn) == 0){stop("Couldn't find h5se rg dataset.")}
+  if(length(h5se.gm.fn) == 0){stop("Couldn't find h5se gm dataset.")}
+  if(length(h5se.gr.fn) == 0){stop("Couldn't find h5se gr dataset.")}
+  message("Getting model predictions...")
+  md_predictions(ts = ts, rgset.fname = h5se.rg.fn, grset.fname = h5se.gr.fn)
+  message("Getting quality metrics...");get_qcmetrics()
+  message("Getting replicates info...");get_replicates()
+  return(NULL)
+}
+
+#' Get available metadata as a single table
+#'
+#' Detects available metadata and aggregates tables into a single composite 
+#' table.
+#'
+#' @param files.dname Files dir name for instance ("recount-methylation-files")
+#' @param md.dname Metadata dir name ("metadata"), contained at files.dname.
+#' @param comp.dname Compilations dir name ("compilations"), contained at 
+#' files.dname.
+#' @return NULL, stores new composite metadata table.
+#' @export
+#'
+get_all_md <- function(files.dname = "recount-methylation-files", 
+                       md.dname = "metadata", comp.dname = "compilations"){
+  message("Handling metadata options...");md <- rmp_handle_metadata()
+  if(is.null(md)){stop("Couldn't get metadata...")};ts <- md[["timestamp"]]
+  message("Getting platform info..."); accinfo <- rmp_handle_platform()
+  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Aggregating metadata...");md_agg(ts = ts, platform = platform)
+  return(NULL)
+}
+
+#' Append metadata to compilation files
+#' 
+#' Append aggregate metadata to compilation files. This step follows 
+#' formation of the compilation files (e.g. rule `get_rg_compilations`, etc.)
+#' and metadata files (e.g. rule `do_mdmap`, etc.).
+#'
+#' @param files.dname Files dir name for instance ("recount-methylation-files")
+#' @param md.dname Metadata dir name ("metadata"), contained at files.dname.
+#' @param comp.dname Compilations dir name ("compilations"), contained at 
+#' files.dname.
+#' @return NULL, stores new composite metadata table.
+#' @export
+append_md <- function(files.dname = "recount-methylation-files", 
+                      md.dname = "metadata", comp.dname = "compilations"){
+  message("Handling metadata options...");md <- rmp_handle_metadata()
+  if(is.null(md)){stop("Couldn't get metadata...")};ts <- md[["timestamp"]]
+  message("Appending metadata...")
+  append_md(ts = ts, files.dname = files.dname, md.dname = md.dname, 
+            comp.dname = comp.dname); return(NULL)
+}

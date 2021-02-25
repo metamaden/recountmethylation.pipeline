@@ -140,4 +140,234 @@ get_jsontitle <- function(ts, json.dname = "gsm_json_filt",
   save(gsmtitledf, file = json.titlesdf.fpath); return(NULL)
 }
 
+#' Aggregate available metadata tables
+#'
+#' Detects valid metadata at md.dpath, then aggregates these into a single
+#' composite table.
+#' 
+#' @param ts Timestamp.
+#' @param platform The DNAm array platform used.
+#' @param lfn Optional list of filenames. If NULL, automatically detect 
+#' valid metadata files (NULL).
+#' @param id.cname Column name for sample IDs, which should be present in 
+#' each table to be compiled ("gsm").
+#' @param mda.fn Filename stem of new aggregate metadata table to save 
+#' ("mdall").
+#' @param md.fnv Vector of regex patterns to detect valid metadata tables.
+#' @param md.dpath Path to metadata directory.
+#' @param verbose Whether to show status messages (TRUE).
+#' @return NULL, stores aggregate/composite metadata table.
+#' @export
+md_agg <- function(ts, platform = NULL, lfn = NULL, id.cname = "gsm", mda.fn = "mdall",
+                   md.fnv = c("^md_postprocess.*","^mdmod_dnam-predictions_.*",
+                              "^mdqc_.*", "^mdrep_.*", "^mdmsrap_.*"),
+                   md.dpath = file.path("recount-methylation-files",
+                                        "metadata"), verbose = TRUE){
+  if(is.null(lfn)){
+    if(verbose){message("Provided lfn is NULL, detecting metadata files...")}
+    lfn <- list.files(md.dpath);lfn <- lfn[grepl(paste0(".*",ts,".*"),lfn)]
+    lfn <- lfn[grepl(paste(md.fnv, collapse = "|"), lfn)]}
+  if(verbose){message("Loading metadata files...")};ldat <- list()
+  for(ii in seq(length(lfn))){
+    mdi <- get(load(file.path(md.dpath, lfn[ii])))
+    if("gsm" %in% colnames(mdi)){ldat[[lfn[ii]]] <- mdi} else{
+      message("Couldn't find sample ID column '",id.cname,
+              "' in file ",lfn[ii],". Skipping...")}}
+  if(verbose){message("Getting all sample IDs...")}
+  idv <- unique(unlist(lapply(ldat, function(x){
+    return(as.character(x[,id.cname]))})))
+  mda<-as.matrix(data.frame(id=idv,stringsAsFactors=FALSE))
+  colnames(mda)<-id.cname; rownames(mda) <- mda[,1]
+  if(verbose){
+    message("Detected ",length(idv)," unique sample IDs. Coercing tables...")}
+  for(ii in seq(length(ldat))){
+    tname <- names(ldat)[ii]
+    mdt <- as.matrix(ldat[[ii]]);idout <- idv[!idv %in% mdt[,id.cname]]
+    if(length(idout) > 0){
+      mna <- matrix(rep(rep("NA", ncol(mdt)), length(idout)),
+                    nrow=length(idout)); colnames(mna) <- colnames(mdt)
+      mna[,id.cname] <- idout; mdt <- rbind(mdt, mna)
+      if(verbose){
+        message("Bound ",nrow(mna)," rows to data ",tname)}}
+    if(verbose){message("Matching tables on sample IDs...")}
+    mdt <- mdt[order(match(mdt[,id.cname], mda[,id.cname])),]
+    rownames(mdt) <- mdt[,id.cname]; 
+    mdt <- mdt[,!colnames(mdt) %in% colnames(mda)] # filter redundant vars
+    cond <- identical(as.character(rownames(mdt)), 
+                      as.character(rownames(mda)))
+    if(cond){mda <- cbind(mda, mdt)} else{
+      if(verbose){
+        message("Couldn't match sample IDs. Skipping table ",tname)}}
+    if(verbose){message("Finished with table ",tname)}}
+  mda <- as.data.frame(mda, stringsAsFactors = FALSE)
+  if(!is.null(platform)){mda$platform <- platform}
+  mda.fpath <- file.path(md.dpath, paste0(mda.fn, "_", ts, ".rda"))
+  if(verbose){message("Saving aggregate md table to ", mda.fpath)}
+  save(mda, file = mda.fpath); return(NULL)
+}
+
+#' Append metadata to DNAm data compilations
+#'
+#' Append metadata to DNAm data compilations. Handles metadata addition for 
+#' either HDF5 or HDF5-SummarizedExperiment compilation files.
+#' 
+#' @param ts Timestamp.
+#' @param files.dname Files dir name for the instance 
+#' ("recount-methylation-files")
+#' @param md.dname Metadata dir name for the instance ("metadata"), contained 
+#' in files.dname.
+#' @param comp.dname Compilations dir name for instance ("compilations"), contained
+#' in files.dname.
+#' @param comp.fnv Vector of regular expression patterns to filter compilation 
+#' files list.
+#' @param mdall.fnstr Filename string stem to detect aggregate metadata table at 
+#' md.dname.
+#' @param verbose Whether to show status messages (TRUE).
+#' @return NULL, if all appends successful, otherwise a list of the compilation 
+#' files for which appends weren't successful.
+#' @export
+append_md <- function(ts, files.dname = "recount-methylation-files", 
+                      md.dname = "metadata", comp.dname = "compilations", 
+                      comp.fnv = c(".*_h5_.*", ".*_h5se_.*"),
+                      mdall.fnstr = "mdall_*", verbose = TRUE){
+  comp.dpath <- file.path(files.dname, comp.dname)
+  md.dpath <- file.path(files.dname, md.dname);tsstr <- paste0(".*",ts,".*")
+  comp.lf <- list.files(comp.dpath); comp.lf <- comp.lf[grepl(tsstr, comp.lf)]
+  comp.lf <- comp.lf[grepl(paste(comp.fnv, collapse = "|"), comp.lf)]
+  if(length(comp.lf) == 0){
+    stop("Didn't find any compilation files at ",comp.dpath,".")}
+  md.lf <- list.files(md.dpath); md.lf <- md.lf[grepl(tsstr, md.lf)]
+  mdall.fname <- md.lf[grepl(mdall.fnstr, md.lf)][1]
+  if(length(mdall.fname) == 0){
+    stop("Couldn't find mdall file at ",mdall.fpath,
+         ". Try running rule make_md_all first.")}
+  mdall <- get(load(file.path(md.dpath, mdall.fname)))
+  if(verbose){message("Appending mdall to ",length(comp.lf),
+                      " compilation files...")}
+  ltry <- list()
+  for(comp.fn in comp.lf){
+    comp.fpath <- file.path(comp.dpath, comp.fn)
+    if(grepl(comp.fnv[1], comp.fn)){
+      if(verbose){message("Appending metadata to h5db ", comp.fn, "...")}
+      ltry[[comp.fn]] <- try(
+        suppressMessages(append_md_h5db(ts = ts, mdall = mdall, 
+                                        comp.fpath = comp.fpath)))
+    } else{
+      if(verbose){message("Appending metadata to h5se file ", comp.fn, "...")}
+      ltry[[comp.fn]] <- try(
+        suppressMessages(append_md_h5se(ts = ts, mdall = mdall, 
+                                        comp.fpath = comp.fpath)))}
+    if(verbose){message("Finished compilation file ", comp.fn)}}
+  if(length(ltry) == 0){
+    if(verbose){"Append success for all compilations."}} else{
+      message("Couldn't complete md append for certain files. ",
+              "Returning status list...");return(ltry)
+    };return(NULL)
+}
+
+#' Append metadata to HDF5 DNAm data compilation file
+#'
+#' Append metadata to DNAm HDF5 data compilations.
+#' 
+#' @param ts Timestamp.
+#' @param mdall Valid metadata table containing column id.cname.
+#' @param comp.fpath File path to a valid h5 compilation file.
+#' @param id.cname Sample ID column name in mdall ("gsm").
+#' @param dsn Name stem of the metadata table in h5db object (e.g. writes table
+#' named dsn and column names to paset0(dsn".colnames") to h5db)
+#' @return NULL, saves h5 object with appended metadata.
+#' @export
+append_md_h5db <- function(ts, mdall, comp.fpath, id.cname = "gsm", 
+                           dsn = "mdall", overwrite = TRUE){
+  dbn <- comp.fpath;tnames <- as.character(rhdf5::h5ls(dbn)[,2])
+  if(dsn %in% tnames){
+    if(!overwrite){
+      stop("Metadata table '",dsn,"' already exists in h5db.")
+    } else{
+      if(verbose){message("Removing detected metadata table...")}
+      rhdf5::h5delete(dbn, dsn);rhdf5::h5delete(dbn, paste0(dsn,".colnames"))}}
+  cnstr <- ifelse(grepl(".*h5_rg.*", gsub(".*\\/", "", comp.fpath)),
+                  ".*rownames.*", ".*colnames.*")
+  tname.sampid <- tnames[grepl(cnstr, tnames)][1]
+  idv <- gsub("\\..*", "", as.character(rhdf5::h5read(dbn, tname.sampid)))
+  idint <- intersect(idv, mdall[,id.cname])
+  if(length(idint) == 0){
+    stop("No sample IDs overlap compilation and mdall.")
+  } else{
+    if(verbose){
+      message(length(idint)," samples overlap compilation and mdall.")}}
+  mdf <- mdall[mdall[,id.cname] %in% idint, ,drop = FALSE]
+  idout <- mdf[!mdf[,id.cname %in% idv],id.cname]
+  if(length(idout) > 0){
+    if(verbose){
+      message("Appending null metadata for ",length(idout)," samples...")}
+    mna <- matrix(rep(rep("NA", ncol(mdf)), length(idout)), ncol = ncol(mdf))
+    colnames(mna) <- colnames(mdf)
+    mna[, which(colnames(mdf) == id.cname)] <- rownames(mna) <- idout
+    mdf <- rbind(mdf, mna)}
+  mdf <- mdf[order(match(mdf[,id.cname], idv)),]
+  cond <- identical(mdf[, id.cname], idv)
+  if(cond){
+    if(verbose){message("Making metadata objects...")}
+    rhdf5::h5createDataset(dbn, dsn, dims = c(nrow(mdall), ncol(mdall)),
+                           maxdims = c(rhdf5::H5Sunlimited(), 
+                                       rhdf5::H5Sunlimited()),
+                           storage.mode = "character", level = 5, 
+                           chunk = c(10, 16), size = 256)
+    rhdf5::h5createDataset(dbn, paste0(dsn, ".colnames"),level = 5, 
+                           dims=ncol(mdall),maxdims=c(rhdf5::H5Sunlimited()),
+                           storage.mode = "character",chunk = c(5), size = 256)
+    if(verbose){message("Populating new HDF5 entities...")}
+    mdf.cnv <- as.character(colnames(mdf))
+    mdf <- as.matrix(mdf); class(mdf) <- "character"
+    rhdf5::h5write(mdf, file = dbn, name = dsn,
+                   index = list(1:nrow(mdf), 1:ncol(mdf)))
+    if(verbose){message("Appending metadata...")}
+    rhdf5::h5write(mdf.cnv, file = dbn, name = paste0(dsn, ".colnames"),
+                   index = list(1:length(mdf.cnv)))};rhdf5::h5closeAll()
+  if(verbose){message("Finished appending metadata.")};return(NULL)
+}
+
+#' Append metadata to HDF5-SummarizedExperiment DNAm data compilation file
+#'
+#' Append metadata to DNAm HDF5-SummarizedExperiment data compilations.
+#' 
+#' @param ts Timestamp.
+#' @param mdall Valid metadata table containing column id.cname.
+#' @param comp.fpath File path to a valid h5se compilation file.
+#' @param id.cname Sample ID column name in mdall ("gsm").
+#' @param overwrite Whether to overwrite existing metadata (TRUE).
+#' @return NULL, saves h5se object with appended metadata.
+#' @export
+append_md_h5se <- function(ts, mdall, comp.fpath, id.cname = "gsm", 
+                           overwrite = TRUE){
+  se <- HDF5Array::loadHDF5SummarizedExperiment(comp.fpath);
+  pdat <- pData(se); if(ncol(pdat) > 0){
+    if(verbose){message("Overwriting detected metadata")}}
+  cnv <- colnames(se); idv <- gsub("\\..*", "", cnv)
+  idint <- intersect(idv, mdall[,id.cname])
+  if(length(idint) == 0){
+    stop("No sample IDs overlap compilation and mdall.")
+  } else{
+      if(verbose){
+        message(length(idint)," samples overlap compilation and mdall.")}}
+  mdf <- mdall[mdall[,id.cname] %in% idint, ,drop = FALSE]
+  idout <- mdf[!mdf[,id.cname %in% idv],id.cname]
+  if(length(idout) > 0){
+    if(verbose){
+      message("Appending null metadata for ",length(idout)," samples...")}
+    mna <- matrix(rep(rep("NA", ncol(mdf)), length(idout)), ncol = ncol(mdf))
+    colnames(mna) <- colnames(mdf)
+    mna[, which(colnames(mdf) == id.cname)] <- rownames(mna) <- idout
+    mdf <- rbind(mdf, mna)}
+  mdf <- mdf[order(match(mdf[,id.cname], idv)),]
+  cond <- identical(mdf[, id.cname], idv)
+  if(cond){
+    if(verbose){message("Appending metadata...")}
+    rownames(mdf) <- colnames(se);pData(se) <- DataFrame(mdf)
+    HDF5Array::quickResaveHDF5SummarizedExperiment(se)
+  } else{stop("Couldn't match sample IDs in compilation and mdall.")}
+  return(NULL)
+}
+
 

@@ -7,4 +7,4 @@
 
 library(recount.synth)
 
-suppressMessages()
+append_md()

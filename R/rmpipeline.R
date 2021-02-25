@@ -410,8 +410,8 @@ h5_add_tables <- function(dsn, fnl, platform, fnpath, dbn, ngsm.block,verbose){
 #' @return Postprocessed metadata as a `data.frame`.
 #' @export
 data_mdpost = function(dbn, dsn){
-  mdp = as.data.frame(rhdf5::h5read(file = dbn, name = dsn), stringsAsFactors = F)
-  colnames(mdp) = rhdf5::h5read(file = dbn, name = paste(dsn, "colnames", sep = "."))
+  mdp <- as.data.frame(rhdf5::h5read(file = dbn, name = dsn), stringsAsFactors = F)
+  colnames(mdp) <- rhdf5::h5read(file = dbn, name = paste(dsn, "colnames", sep = "."))
   return(mdp)
 }
 

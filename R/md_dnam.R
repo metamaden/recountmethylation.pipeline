@@ -5,13 +5,12 @@
 # Preprocess available sample metadata
 #
 
-require(data.table); require(rjson)
-library(wateRmelon) # for age predictions
-library(minfi) # for cell type and sex predictions
-library(HDF5Array)
-library(minfi)
-library(ewastools)
-
+#require(data.table); require(rjson)
+#library(wateRmelon) # for age predictions
+#library(minfi) # for cell type and sex predictions
+#library(HDF5Array)
+#library(minfi)
+#library(ewastools)
 
 #--------------
 # dnam metadata
