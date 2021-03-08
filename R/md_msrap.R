@@ -30,12 +30,13 @@ get_msrap <- function(ts, files.dir = "recount-methylation-files", md.dname = "m
                       msrap.dname = "gsm_msrap_outfiles", msrap.regex.str = "^msrapout.*",
                       gsmid.fnindex = 2, gmap.fn = "md_msrapout"){
   rpath <- file.path(files.dir, msrap.dname)
-  wpath <- file.path(files.dir, md.dname, paste(gmap.fn, ts, collapse = "."))
+  new.fn <- paste0(paste(c(gmap.fn, ts), collapse = "_"), ".rda")
+  wpath <- file.path(files.dir, md.dname, new.fn)
   rl <- list.files(rpath); rl <- rl[grepl(msrap.regex.str, rl)]
   gmap <- matrix(nrow = 0, ncol = 2);lfl.filt <- list.files(rpath)
   for(f in rl){
     gsmi <- unlist(strsplit(f,"\\."))[gsmid.fnindex]
-    jfi <- jsonlite::fromJSON(txt = file.path(dpath, f), flatten=T)
+    jfi <- jsonlite::fromJSON(txt = file.path(rpath, f), flatten=T)
     xi <- jfi[,!colnames(jfi) %in% 
                 c("mapped ontology terms", "real-value properties")]
     pi <- paste0("'",names(xi),"':'",as.character(xi[1,]),"'",collapse=";")
@@ -48,4 +49,11 @@ get_msrap <- function(ts, files.dir = "recount-methylation-files", md.dname = "m
     jfi.mapped.flat<-paste0(pi,";",mot)
     gmapi<-matrix(c(gsmi,jfi.mapped.flat),nrow=1);gmap <- rbind(gmap, gmapi)}
   gmap <- as.data.frame(gmap, stringsAsFactors = FALSE)
-  colnames(gmap) <- c("gsm", "msrapout");save(gmap, file = wpath);return(NULL)}
+  colnames(gmap) <- c("gsm", "msrapout")
+  # get stype predictions
+  gmap$sampletype <- unlist(lapply(seq(nrow(gmap)), function(x){
+    dat<-gmap[x,2];stype<-gsub(";.*|'","",gsub(".*'sample type':","",dat))
+    sconf <- gsub(";.*|'", "", gsub(".*'sample-type confidence':", "", dat))
+    sconf <- round(as.numeric(sconf), 4)
+    return(paste0("sample_type:", stype, ";confidence:", sconf))}))
+  save(gmap, file = wpath);return(NULL)}

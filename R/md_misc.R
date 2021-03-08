@@ -160,7 +160,7 @@ get_jsontitle <- function(ts, json.dname = "gsm_json_filt",
 #' @export
 md_agg <- function(ts, platform = NULL, lfn = NULL, id.cname = "gsm", mda.fn = "mdall",
                    md.fnv = c("^md_postprocess.*","^mdmod_dnam-predictions_.*",
-                              "^mdqc_.*", "^mdrep_.*", "^mdmsrap_.*"),
+                              "^mdqc_.*", "^mdrep_.*", "^md_msrapout_.*"),
                    md.dpath = file.path("recount-methylation-files",
                                         "metadata"), verbose = TRUE){
   if(is.null(lfn)){
@@ -176,20 +176,21 @@ md_agg <- function(ts, platform = NULL, lfn = NULL, id.cname = "gsm", mda.fn = "
   if(verbose){message("Getting all sample IDs...")}
   idv <- unique(unlist(lapply(ldat, function(x){
     return(as.character(x[,id.cname]))})))
-  mda<-as.matrix(data.frame(id=idv,stringsAsFactors=FALSE))
-  colnames(mda)<-id.cname; rownames(mda) <- mda[,1]
+  mda <- as.matrix(data.frame(id = idv, stringsAsFactors = FALSE))
+  colnames(mda) <- id.cname; rownames(mda) <- mda[,1]
   if(verbose){
     message("Detected ",length(idv)," unique sample IDs. Coercing tables...")}
   for(ii in seq(length(ldat))){
     tname <- names(ldat)[ii]
-    mdt <- as.matrix(ldat[[ii]]);idout <- idv[!idv %in% mdt[,id.cname]]
+    mdt <- as.matrix(ldat[[ii]]); mdt.gsmv <- as.character(mdt[,id.cname])
+    idout <- idv[!idv %in% mdt.gsmv]
     if(length(idout) > 0){
       mna <- matrix(rep(rep("NA", ncol(mdt)), length(idout)),
                     nrow=length(idout)); colnames(mna) <- colnames(mdt)
       mna[,id.cname] <- idout; mdt <- rbind(mdt, mna)
-      if(verbose){
-        message("Bound ",nrow(mna)," rows to data ",tname)}}
+      if(verbose){message("Bound ",nrow(mna)," rows to data ",tname)}}
     if(verbose){message("Matching tables on sample IDs...")}
+    mdt <- mdt[mdt[,id.cname] %in% mda[,id.cname],]
     mdt <- mdt[order(match(mdt[,id.cname], mda[,id.cname])),]
     rownames(mdt) <- mdt[,id.cname]; 
     mdt <- mdt[,!colnames(mdt) %in% colnames(mda)] # filter redundant vars
