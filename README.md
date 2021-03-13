@@ -1,4 +1,4 @@
-# rmpipeline
+# recountmethylation.pipeline
 
 [![DOI](https://zenodo.org/badge/241738988.svg)](https://zenodo.org/badge/latestdoi/241738988)
 
