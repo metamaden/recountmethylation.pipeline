@@ -2,7 +2,7 @@
 % Please edit documentation in R/rmpipeline.R
 \name{dt_write_rg}
 \alias{dt_write_rg}
-\title{Writes chunk of red and grn signal data}
+\title{Write red and grn signal data to flat tables.}
 \usage{
 dt_write_rg(
   probesv,
@@ -19,7 +19,7 @@ dt_write_rg(
 
 \item{hlinkv}{Vector of GSM IDAT hlink file names, or file basenames.}
 
-\item{idatspath}{Path to idat files directory.}
+\item{idatspath}{Path to IDAT files directory.}
 
 \item{reds.path}{Path to new red signal data table.}
 
@@ -35,5 +35,9 @@ dt_write_rg(
 NULL, writes data chunks as side effect
 }
 \description{
-Writes chunk of red and grn signal data
+This function takes a filtered list of valid IDAT hlink files and 
+attempts to read their data in chunks with `minfi::read.metharray()`. 
+To read as many samples as possible, the function attempts to read 
+and combine individual valid samples if an error is thrown for a 
+given chunk or sample subset.
 }

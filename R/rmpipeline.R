@@ -58,13 +58,14 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 # Get array file sizes
 #---------------------
 
-#' get_idat_sizem
-#'
 #' Get matrices of IDAT file sizes before and after performing 2 quality 
-#' filters. First, IDAT hlink files are filtered based on absolute file 
+#' filters.
+#'
+#' Stores matrices with IDAT file sizes before and after applying size 
+#' filters. IDAT hlink files are filtered based on absolute file 
 #' size ranges expected for the instance array platform ID. Second, a
-#' filter is performed to remove file pairs of differing sizes. Results matrices
-#' are saved at mdpath with "msize-all_idat_hlinks_" and 
+#' filter is performed to remove file pairs of differing sizes. Results 
+#' matrices are saved at mdpath with "msize-all_idat_hlinks_" and 
 #' "msize-filt_idat_hlinks_" fn patterns.
 #' 
 #' @param idats.path Path to the instance directory containing IDAT hlink files.
@@ -134,7 +135,7 @@ get_idat_sizem <- function(idats.path = file.path("recount-methylation-files",
 #' @param overwrite Whether to overwrite existing data.table files with same destpath (default TRUE).
 #' @param fnstem Filename stem for data tables.
 #' @param sepval Separator symbol for data being written (default " ").
-#' @param idatspath Path to idat files to read
+#' @param idatspath Path to IDAT files to read.
 #' @param getnb Whether to get noob-normalized Beta-vlaues (default: FALSE).
 #' @return 
 #' @examples
@@ -270,11 +271,17 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
   lr <- list("gsmu" = gsmu, "hlinkv" = hlfinal); return(lr)
 }
 
-#' Writes chunk of red and grn signal data
+#' Write red and grn signal data to flat tables.
+#'
+#' This function takes a filtered list of valid IDAT hlink files and 
+#' attempts to read their data in chunks with `minfi::read.metharray()`. 
+#' To read as many samples as possible, the function attempts to read 
+#' and combine individual valid samples if an error is thrown for a 
+#' given chunk or sample subset.
 #'
 #' @param probesv Vector of probe labels.
 #' @param hlinkv Vector of GSM IDAT hlink file names, or file basenames.
-#' @param idatspath Path to idat files directory.
+#' @param idatspath Path to IDAT files directory.
 #' @param reds.path Path to new red signal data table.
 #' @param grns.path Path to new grn signal data table.
 #' @param min.cols Minimum data columns to write DNAm data (integer, )
@@ -285,9 +292,19 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
 dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path, 
                         sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};
-  pathl=unique(file.path(idatspath, hlinkv))
-  rgi=try(minfi::read.metharray(pathl,force=TRUE))
-  if(class(rgi) == "RGChannelSet"){if(verbose){message("Getting signal data..")}
+  pathl <- unique(file.path(idatspath, hlinkv))
+  rgi <- try(minfi::read.metharray(pathl))
+  if(!class(rgi) == "RGChannelSet"){
+    message("Error reading chunk. Reading samples processively...")
+    rgl <- lapply(pathl, function(x){try(minfi::read.metharray(x))})
+    rgi <- do.call(cbind, lapply(rgl, function(x){
+      if(class(x) == "RGChannelSet"){return(x)}}))
+    rgl.filt <- which(unlist(lapply(rgl, 
+                        function(x){class(x) == "RGChannelSet"})))
+    rgi <- do.call(combine, rgl[rgl.filt])}
+  if(class(rgi) == "RGChannelSet"){
+    if(verbose){message("Read signals for ",ncol(rgi)," samples. ",
+                        "Getting signal data..")}
     red.dat <- minfi::getRed(rgi); grn.dat <- minfi::getGreen(rgi)
     probesv.out <- probesv[!probesv %in% rownames(rgi)]
     if(length(probesv.out) > 0){
@@ -301,12 +318,12 @@ dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path,
     cond <- identical(rownames(rdat.order), probesv) & 
       identical(rownames(gdat.order), probesv)
     if(cond){if(verbose){message("Appending new data...")}
-      redi = matrix(c(colnames(rgi),t(rdat.order)), ncol = nrow(rdat.order)+1)
-      grni = matrix(c(colnames(rgi),t(gdat.order)), ncol = nrow(gdat.order)+1)
+      redi <- matrix(c(colnames(rgi),t(rdat.order)), ncol = nrow(rdat.order)+1)
+      grni <- matrix(c(colnames(rgi),t(gdat.order)), ncol = nrow(gdat.order)+1)
       data.table::fwrite(redi, reds.path, sep = sepval, append = TRUE)
       data.table::fwrite(grni, grns.path, sep = sepval, append = TRUE)
     } else{if(verbose){message("Error matching probe vectors. Skipping...")}}
-  } else{if(verbose){message("Error reading data. Skipping...")}}; return(NULL)
+  } else{if(verbose){message("Error reading chunk. Skipping...")}};return(NULL)
 }
 
 #------------------------------------

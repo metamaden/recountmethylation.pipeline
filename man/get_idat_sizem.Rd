@@ -2,7 +2,8 @@
 % Please edit documentation in R/rmpipeline.R
 \name{get_idat_sizem}
 \alias{get_idat_sizem}
-\title{get_idat_sizem}
+\title{Get matrices of IDAT file sizes before and after performing 2 quality 
+filters.}
 \usage{
 get_idat_sizem(
   idats.path = file.path("recount-methylation-files", "idats"),
@@ -18,10 +19,10 @@ get_idat_sizem(
 Returns a size-filtered matrix of IDAT hlink filenames.
 }
 \description{
-Get matrices of IDAT file sizes before and after performing 2 quality 
-filters. First, IDAT hlink files are filtered based on absolute file 
+Stores matrices with IDAT file sizes before and after applying size 
+filters. IDAT hlink files are filtered based on absolute file 
 size ranges expected for the instance array platform ID. Second, a
-filter is performed to remove file pairs of differing sizes. Results matrices
-are saved at mdpath with "msize-all_idat_hlinks_" and 
+filter is performed to remove file pairs of differing sizes. Results 
+matrices are saved at mdpath with "msize-all_idat_hlinks_" and 
 "msize-filt_idat_hlinks_" fn patterns.
 }

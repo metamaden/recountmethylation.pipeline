@@ -23,7 +23,9 @@ e.g. "gsm"). If this is NULL, try loading an se object instead.}
 
 \item{fn.dpath}{Directory path to save samples ID vector.}
 
-\item{id.gsm.cname}{}
+\item{id.gsm.cname}{Name of column containing the GSM IDs.}
+
+\item{verbose}{Whether to show verbose status messages.}
 }
 \value{
 Vector of GSM IDs, with option to save.

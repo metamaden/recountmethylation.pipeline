@@ -14,8 +14,8 @@
 #' @param fn.str Name of sample IDs vector file to save.
 #' @param fn.dpath Directory path to save samples ID vector.
 #' @param se.path Path to a valid HDF5-SummarizedExperiment to check/load.
-#' @param id.gsm.cname 
-#' @param verbose
+#' @param id.gsm.cname Name of column containing the GSM IDs.
+#' @param verbose Whether to show verbose status messages.
 #' @return Vector of GSM IDs, with option to save.
 #' @export
 get_gsm_exclude <- function(md = NULL, se.path = NULL, fn.str = "gsm_exclude", 

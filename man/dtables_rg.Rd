@@ -35,7 +35,7 @@ dtables_rg(
 
 \item{sepval}{Separator symbol for data being written (default " ").}
 
-\item{idatspath}{Path to idat files to read}
+\item{idatspath}{Path to IDAT files to read.}
 
 \item{getnb}{Whether to get noob-normalized Beta-vlaues (default: FALSE).}
 }
