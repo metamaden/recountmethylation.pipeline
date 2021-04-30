@@ -264,9 +264,9 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
     if(verbose){message("remaking gid list")}
     gpath.gid <- gsub("\\..*", "", gpath.ts)
   }; hlinkv <- gpath.ts; message("Performing IDATs file sizes filters...")
-  msf <- get_idat_sizem(idatspath); msf.hv <- basename(msf[,1])
+  msf.hv <- basename(get_idat_sizem(idatspath)[,1])
   msf.hv <- unique(gsub("(_Red.idat|_Grn.idat)", "", msf.hv))
-  hlfinal <- intersect(hlinkv, msf.hv);gsmu<-gsub("\\..*", "",hlinkv[hlfilt])
+  hlfinal <- intersect(hlinkv, msf.hv);gsmu <- gsub("\\..*", "", hlfinal)
   lr <- list("gsmu" = gsmu, "hlinkv" = hlfinal); return(lr)
 }
 
