@@ -235,16 +235,15 @@ dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath,
 #' @export
 dt_checkidat <- function(idatspath, verbose = TRUE){
   if(verbose){message("Getting valid GSM IDs from IDAT filenames...")}
-  idats.lf = list.files(idatspath)
-  which.valid1 = grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4,
+  idats.lf <- list.files(idatspath)
+  which.valid1 <- grepl("\\.idat$", substr(idats.lf, nchar(idats.lf) - 4,
                                           nchar(idats.lf))) # idat ext
-  which.valid2 = grepl(".*hlink.*", idats.lf) # hlink
-  which.valid3 = length(gsub("\\..*", "", gsub(".*\\.", "", idats.lf))) > 0 
-  idats.valid = idats.lf[which.valid1 & which.valid2 & which.valid3]
-  gsmu = gsub("\\..*", "", idats.valid); gsmu = gsmu[grepl("^GSM.*", gsmu)]
-  gsmu = unique(gsmu)
+  which.valid2 <- grepl(".*hlink.*", idats.lf) # hlink
+  which.valid3 <- length(gsub("\\..*", "", gsub(".*\\.", "", idats.lf))) > 0 
+  idats.valid <- idats.lf[which.valid1 & which.valid2 & which.valid3]
+  gsmu <- gsub("\\..*","",idats.valid);gsmu<-unique(gsmu[grepl("^GSM.*",gsmu)])
   if(verbose){message("Finding paired red and grn channel files...")}
-  gstr <- gsub(".*hlink\\.", "", gsub("(_Red.idat$|_Grn.idat$)", "", idats.valid))
+  gstr<-gsub(".*hlink\\.", "",gsub("(_Red.idat$|_Grn.idat$)", "",idats.valid))
   rsub <- idats.valid[grepl(".*_Red.idat$", idats.valid)]
   gsub <- idats.valid[grepl(".*_Grn.idat$", idats.valid)]
   if(verbose){message("Intersecting .hlink and _Red.idat or _Grn.idat")}
@@ -265,9 +264,10 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
     if(verbose){message("remaking gid list")}
     gpath.gid <- gsub("\\..*", "", gpath.ts)
   }; hlinkv <- gpath.ts; message("Performing IDATs file sizes filters...")
-  msf <- get_idat_sizem(idatspath); hlfilt <- which(hlinkv %in% msf[,1])
-  gsmu <- gsub("\\..*", "", hlinkv[hlfilt])
-  lr <- list("gsmu" = gsmu, "hlinkv" = hlinkv); return(lr)
+  msf <- get_idat_sizem(idatspath); msf.hv <- basename(msf[,1])
+  msf.hv <- unique(gsub("(_Red.idat|_Grn.idat)", "", msf.hv))
+  hlfinal <- intersect(hlinkv, msf.hv);gsmu<-gsub("\\..*", "",hlinkv[hlfilt])
+  lr <- list("gsmu" = gsmu, "hlinkv" = hlfinal); return(lr)
 }
 
 #' Writes chunk of red and grn signal data
