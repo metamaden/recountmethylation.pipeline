@@ -14,8 +14,7 @@ dtables_rg(
   fnstem = "mdat.compilation",
   sepval = " ",
   idatspath = file.path("recount-methylation-files", "idats"),
-  destpath = file.path("recount-methylation-analysis", "files", "mdata",
-    "compilations")
+  destpath = file.path("recount-methylation-files", "compilations")
 )
 }
 \arguments{

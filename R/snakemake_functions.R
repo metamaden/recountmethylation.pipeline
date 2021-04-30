@@ -86,7 +86,7 @@ get_rg_dtables <- function(files.dname = "recount-methylation-files",
                            comp.dname = "compilations"){
   comp.dpath <- file.path(files.dname, comp.dname)
   if(!dir.exists(comp.dpath)){
-    message("Making new compilations dir: ", comp.dpath);dir.create(comp.dpath)}
+    message("Making new compilations dir: ",comp.dpath);dir.create(comp.dpath)}
   message("Handling metadata options...")
   md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
   message("Getting platform info..."); accinfo <- rmp_handle_platform()

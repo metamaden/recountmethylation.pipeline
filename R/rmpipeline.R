@@ -51,8 +51,68 @@ get_metadata <- function(title, version, pname = "rmpipeline",
   path <- paste(system.file(package = pname), sname, sep="/")
   ts <- system(paste("python", path, sep = " "),
                intern = TRUE, wait = FALSE)
-  mdl[["timestamp"]] <- ts
-  return(mdl)
+  mdl[["timestamp"]] <- ts; return(mdl)
+}
+
+#---------------------
+# Get array file sizes
+#---------------------
+
+#' get_idat_sizem
+#'
+#' Get matrices of IDAT file sizes before and after performing 2 quality 
+#' filters. First, IDAT hlink files are filtered based on absolute file 
+#' size ranges expected for the instance array platform ID. Second, a
+#' filter is performed to remove file pairs of differing sizes. Results matrices
+#' are saved at mdpath with "msize-all_idat_hlinks_" and 
+#' "msize-filt_idat_hlinks_" fn patterns.
+#' 
+#' @param idats.path Path to the instance directory containing IDAT hlink files.
+#' @param mdpath Path to instance directory containing the metadata.
+#' @return Returns a size-filtered matrix of IDAT hlink filenames.
+#' @export
+get_idat_sizem <- function(idats.path = file.path("recount-methylation-files", 
+                                                 "idats"),
+                          mdpath = file.path("recount-methylation-files", 
+                                             "metadata")){
+  md <- rmp_handle_metadata() # get instance metadata
+  arrayid <- rmp_handle_platform()[["accid"]] # get the platform
+  sfilt.max <- ifelse(arrayid == "GPL13534", 1e7,
+                      ifelse(arrayid == "GPL13534", 1e8, "NA"))
+  sfilt.min <- ifelse(arrayid == "GPL13534", 4e6,
+                      ifelse(arrayid == "GPL13534", 1e7, "NA"))
+  message("Using absolute size (bytes) filters ",
+          "min = ", sfilt.min, ", max = ", sfilt.max, "...")
+  message("Getting the file sizes matrix...")
+  idats.lfv <- list.files(idats.path)
+  idats.lfv.filt <- idats.lfv[grepl(".*hlink.*", idats.lfv)]
+  if(length(idats.lfv.filt) == 0){
+    stop("Didn't find IDAT hlinks at path ",idats.path, ".")}
+  idats.fpathv <- file.path(idats.path, idats.lfv.filt)
+  msize <- do.call(rbind, lapply(idats.fpathv, function(x){
+    c(x, file.info(x)$size)})); colnames(msize) <- c("hlink.fname","size")
+  msize <- as.data.frame(msize, stringsAsFactors = FALSE)
+  msize[,2] <- as.numeric(msize[,2])
+  message("Got size data for ", nrow(msize), " IDAT hlink files...")
+  msf.fname <- paste0("msize-all_idat_hlinks_", md[["timestamp"]], ".rda")
+  msf.fpath <- file.path(mdpath, new.fname)
+  message("Saving full size matrix file to ", msf.fpath)
+  save(msf, file = msf.fpath); message("Performing size filters...")
+  msf <- msize[msize[,2] > sfilt.min & msize[,2] < sfilt.max,]
+  message("After filtering on absolute size, retained ", nrow(msf)," files...")
+  gsmv <- unique(basename(gsub("\\..*", "", msf[,1])))
+  hfiltv <- unlist(lapply(gsmv, function(x){
+    cond <- FALSE; gfv <- msf[grepl(x, msf[,1]),1]
+    if(length(gfv) == 2){
+      sffv <- msf[msf[,1] %in% gfv, 2]
+      if(sffv[1] == sffv[2]){cond <- TRUE}
+    }; if(cond){return(gfv)} else{return("")}
+    })); msf <- msf[msf[,1] %in% hfiltv,]
+  message("After filtering matched IDAT sizes, retained ", nrow(msf)," files.")
+  msf.fname <- paste0("msize-filt_idat_hlinks_", md[["timestamp"]], ".rda")
+  msf.fpath <- file.path(mdpath, msf.fname)
+  message("Saving filtered size matrix file to ", msf.fpath)
+  save(msf, file = msf.fpath); return(msf)
 }
 
 #----------------------------
@@ -85,8 +145,7 @@ get_metadata <- function(title, version, pname = "rmpipeline",
 dtables_rg <- function(platform = c("hm450k", "epic"), version, ts, 
   verbose = TRUE, gsmint = 60, overwrite = TRUE, fnstem = "mdat.compilation", 
   sepval = " ", idatspath = file.path("recount-methylation-files", "idats"),
-  destpath = file.path("recount-methylation-analysis",
-    "files", "mdata", "compilations")){
+  destpath = file.path("recount-methylation-files", "compilations")){
   idatinfo <- dt_checkidat(idatspath = idatspath, verbose = verbose)
   hlinkv <- idatinfo[["hlinkv"]]; gsmu <- idatinfo[["gsmu"]]
   if(verbose){message("Found ", length(gsmu), " GSM IDs with valid IDATs.")}
@@ -141,16 +200,16 @@ dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath,
   grns.fn <- paste("greensignal", platform, "mdat", ts, 
                    gsub("\\.", "-", version), sep="_")
   grns.fn <- paste(grns.fn, fnstem, sep = ".")
-  reds.path = file.path(destpath, reds.fn)
-  grns.path = file.path(destpath, grns.fn); cn = c("gsmi")
-  rgi = minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])),force=TRUE)
+  reds.path <- file.path(destpath, reds.fn)
+  grns.path <- file.path(destpath, grns.fn); cn <- c("gsmi")
+  rgi <- minfi::read.metharray(c(file.path(idatspath, hlinkv[1:2])),force=FALSE)
   if(verbose){message("Getting platform data...")}
   if(platform == "hm450k"){
     require(minfiData); data(RGsetEx); rgi <- RGsetEx
     } else if(platform == "epic"){
       require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
       } else{stop("Error, invalid platform provided.")}
-  rgcni = colnames(t(minfi::getRed(rgi)));rgcn = matrix(c(cn, rgcni),nrow=1)
+  rgcni <- colnames(t(minfi::getRed(rgi)));rgcn <- matrix(c(cn, rgcni),nrow=1)
   if(overwrite){if(verbose){message("Making/verifying data tables...")}
     dt1 <- try(data.table::fwrite(rgcn, reds.path, sep = sepval, 
                                   append = FALSE, col.names = F))
@@ -158,8 +217,7 @@ dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath,
                                   append = FALSE, col.names = F))
     dtcond <- is.null(dt1) & is.null(dt2)
   } else{dt1 <- try(file.exists(reds.path)); dt2 <- try(file.exists(grns.path))
-    dtcond <- dt1 == TRUE & dt1 == TRUE
-  }
+    dtcond <- dt1 == TRUE & dt1 == TRUE}
   lr <- list("dtcond" = dtcond, "reds.path" = reds.path, 
     "grns.path" = grns.path, "num.assays" = nrow(rgi))
   return(lr)
@@ -170,6 +228,7 @@ dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath,
 #' Checks for valid idat file pairs, checks for latest timestamps, 
 #' files with matching timestamps, and valid red/grn IDAT file pairs, 
 #' gets valid gsms idats dir.
+#' 
 #' @param idatspath File path to directory containing IDATs.
 #' @param verbose Whether to return status messages (boolean, TRUE).
 #' @return list containing gsmu and hlinkv
@@ -199,13 +258,15 @@ dt_checkidat <- function(idatspath, verbose = TRUE){
   tsu <- unique(tidv); tsu <- tsu[rev(order(tsu))] # iterate on timestamps
   for(t in tsu){
     gpathf <- gpath[tidv == t & !gidv %in% gpath.gid]
-    if(verbose){message("Removing redundant gsm ids in this iter")}
+    if(verbose){message("Removing redundant GSM IDs in this iteration...")}
     gpathf.gid <- gsub("\\..*", "", gpathf)
     gpathf <- gpathf[!duplicated(gpathf.gid)]
     if(verbose){message("Appending new fn")}; gpath.ts <- c(gpath.ts, gpathf)
     if(verbose){message("remaking gid list")}
     gpath.gid <- gsub("\\..*", "", gpath.ts)
-  }; hlinkv <- gpath.ts; gsmu <- gsub("\\..*", "", hlinkv)
+  }; hlinkv <- gpath.ts; message("Performing IDATs file sizes filters...")
+  msf <- get_idat_sizem(idatspath); hlfilt <- which(hlinkv %in% msf[,1])
+  gsmu <- gsub("\\..*", "", hlinkv[hlfilt])
   lr <- list("gsmu" = gsmu, "hlinkv" = hlinkv); return(lr)
 }
 
