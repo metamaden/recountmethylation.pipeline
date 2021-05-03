@@ -6,6 +6,6 @@
 # instance. This includes metadata mapping and harmonization, DNAm-based metadata,
 # and MetaSRA-pipeline sample type predictions.
 
-library(recount.synth)
+library(recountmethylation.pipeline)
 
 suppressMessages()

@@ -5,6 +5,6 @@
 # Snakemake script to append samples metadata to compilation objects for a 
 # recountmethylation instance.
 
-library(recount.synth)
+library(recountmethylation.pipeline)
 
 append_md()

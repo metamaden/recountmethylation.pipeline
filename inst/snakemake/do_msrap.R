@@ -5,6 +5,6 @@
 # Snakemake script to read the MetaSRA-pipeline mapped metadata into 
 # a flat table.
 
-library(recount.synth)
+library(recountmethylation.pipeline)
 
 get_msrap()

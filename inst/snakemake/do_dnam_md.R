@@ -5,6 +5,6 @@
 # Snakemake script to produce DNAm metadata, including model-based 
 # predictions and quality metrics.
 
-library(recount.synth)
+library(recountmethylation.pipeline)
 
 suppressMessages()

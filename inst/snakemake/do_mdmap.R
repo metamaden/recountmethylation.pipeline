@@ -4,6 +4,6 @@
 # 
 # Snakemake script to map metadata for a recountmethylation instance.
 
-library(recount.synth)
+library(recountmethylation.pipeline)
 
 get_mdmap()
