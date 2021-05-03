@@ -7,4 +7,4 @@
 
 library(recountmethylation.pipeline)
 
-suppressMessages()
+get_mddnam()
