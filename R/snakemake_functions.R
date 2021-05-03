@@ -357,8 +357,11 @@ get_mddnam <- function(files.dname = "recount-methylation-files",
   if(length(h5se.gr.fn) == 0){stop("Couldn't find h5se gr dataset.")}
   message("Getting model predictions...")
   md_predictions(ts = ts, rgset.fname = h5se.rg.fn, grset.fname = h5se.gr.fn)
-  message("Getting quality metrics...");get_qcmetrics()
-  message("Getting replicates info...");get_replicates()
+  message("Getting quality metrics...");get_qcmetrics(ts = ts, 
+                                                      rgset.fname = h5se.rg.fn,
+                                                      gmset.fname = h5se.gm.fn)
+  message("Getting replicates info...");get_replicates(ts = ts, 
+                                                       rg.fname = h5se.rg.fn)
   return(NULL)
 }
 
