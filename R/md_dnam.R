@@ -51,7 +51,7 @@ md_predictions <- function(ts, rgset.fname, grset.fname,
                            files.dname = "recount-methylation-files",
                            md.dname = "metadata", nsamp.block = 50,
                            comp.dname = "compilations", verbose = TRUE){
-  md.dpath <- file.path(files.dname, md.dname)
+  require(wateRmelon); md.dpath <- file.path(files.dname, md.dname)
   rgset.path <- file.path(files.dname, comp.dname, rgset.fname)
   grset.path <- file.path(files.dname, comp.dname, grset.fname)
   if(!file.exists(rgset.path)){stop("Couldn't locate red signals compilation ",
