@@ -134,6 +134,7 @@ get_qcmetrics <- function(ts, rgset.fname, gmset.fname, mdqc.fname = "mdqc",
   if(!file.exists(rgset.path)){stop("Couldn't find h5se gm at: ",gmset.path)}
   rgset <- HDF5Array::loadHDF5SummarizedExperiment(rgset.path)
   gmset <- HDF5Array::loadHDF5SummarizedExperiment(gmset.path)
+  md.dpath <- file.path(files.dname, md.dname)
   mdqc.fpath <- file.path(md.dpath, paste0(mdqc.fname, "_", ts, ".rda"))
   message("Working on file: ", mdqc.fpath, "...")
   md.dpath <- file.path(files.dname, md.dname)
