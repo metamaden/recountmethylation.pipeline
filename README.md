@@ -32,4 +32,4 @@ R CMD INSTALL recountmethylation.pipeline
 ```
 ## Load
 
-After installation, load this package into an active R session `library(rmpipeline)`. 
+After installation, load this package into an active R session `library(recountmethylation.pipeline)`. 
