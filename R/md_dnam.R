@@ -156,7 +156,8 @@ get_qcmetrics <- function(ts, rgset.fname, gmset.fname, mdqc.fname = "mdqc",
                                        blocks[[length(blocks)]]))
     blocks <- blocks[1:(length(blocks)-1)]
   } else{if(verbose){message("No singleton blocks found. Continuing...")}}
-  dft <- df_bathresh() # BeadArray control thresholds
+  dft <- df_bathresh() # BeadArray control thresholds 
+  mdqc <- matrix(nrow = 0, ncol = 37) 
   for(bi in seq(length(blocks))){
     b <- blocks[[bi]];rgf <- rgset[, b];gmf <- gmset[, b]
     colnames(rgf) <- gsub("\\..*", "", colnames(rgf))
@@ -171,7 +172,7 @@ get_qcmetrics <- function(ts, rgset.fname, gmset.fname, mdqc.fname = "mdqc",
     unmeth.l2med <- apply(us, 2, function(x){log2(median(x))})
     dfs <- data.frame(meth.l2med = meth.l2med, unmeth.l2med = unmeth.l2med,
                       stringsAsFactors = FALSE)
-    mi <- cbind(mqc, dfs);ms <- rbind(ms, mi);
+    mi <- cbind(mqc, dfs);mdqc <- rbind(mdqc, mi);
     if(verbose){message("Finished block ", bi)}}
   save(mdqc, file = mdqc.fpath);return(NULL)
 }
