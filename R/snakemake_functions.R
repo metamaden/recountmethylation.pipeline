@@ -15,10 +15,15 @@
 #' `recountmethylation` instance. This is called by rule `new_instance_md`.
 #' 
 #' @param instdir Path to directory to contain all instance metadata.
+#' @param md.dname Name of dir to contain the instance metadata.
+#' @param sett.path Path to the "settings.py" settings file containing the 
+#' platform accession ID.
 #' @return NULL, produces the instance metadata file as side effect.
 #' @export
-new_instance_md <- function(files.dname = "recount-methylation-files",
-                            md.dname = "metadata"){
+new_instance_md <- function(files.dname = "recount-methylation-files", 
+                            md.dname = "metadata",
+                            sett.path = file.path("recountmethlation_server", 
+                                                  "src", "settings.py")){
   instdir <- file.path(files.dname, md.dname)
   if(!dir.exists(instdir)){message("Making instdir: ", instdir)
     dir.create(instdir)}

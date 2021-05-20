@@ -6,10 +6,16 @@
 \usage{
 new_instance_md(
   files.dname = "recount-methylation-files",
-  md.dname = "metadata"
+  md.dname = "metadata",
+  sett.path = file.path("recountmethlation_server", "src", "settings.py")
 )
 }
 \arguments{
+\item{md.dname}{Name of dir to contain the instance metadata.}
+
+\item{sett.path}{Path to the "settings.py" settings file containing the 
+platform accession ID.}
+
 \item{instdir}{Path to directory to contain all instance metadata.}
 }
 \value{
