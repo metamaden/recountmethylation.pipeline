@@ -97,7 +97,7 @@ get_rg_dtables <- function(files.dname = "recount-methylation-files",
   platform <- accinfo[["platform_name"]]
   message("Using platform ", platform, "...")
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  dtables_rg(version, platform = platform, ts = ts, destpath = comp.dpath)
+  dtables_rg(platform=platform, version=version, ts=ts, destpath=comp.dpath)
   return(NULL)
 }
 
