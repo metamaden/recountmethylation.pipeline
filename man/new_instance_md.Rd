@@ -7,7 +7,7 @@
 new_instance_md(
   files.dname = "recount-methylation-files",
   md.dname = "metadata",
-  sett.path = file.path("recountmethlation_server", "src", "settings.py")
+  sett.path = file.path("recountmethylation_server", "src", "settings.py")
 )
 }
 \arguments{

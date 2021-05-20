@@ -22,7 +22,7 @@
 #' @export
 new_instance_md <- function(files.dname = "recount-methylation-files", 
                             md.dname = "metadata",
-                            sett.path = file.path("recountmethlation_server", 
+                            sett.path = file.path("recountmethylation_server", 
                                                   "src", "settings.py")){
   instdir <- file.path(files.dname, md.dname)
   if(!dir.exists(instdir)){message("Making instdir: ", instdir)
