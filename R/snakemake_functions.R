@@ -28,14 +28,13 @@ new_instance_md <- function(files.dname = "recount-methylation-files",
   if(!dir.exists(instdir)){
     message("Making dir ", instdir, "...");dir.create(instdir)}
   md <- get_metadata("compilation_metadata", version = version)
-  # automatically detect platform
   message("Detecting platform from `settings.py`...")
-  sett.path <- file.path("recountmethylation_server", "src", "settings.py")
-  settrl <- gsub(".* |'", "", readLines(sett.path, n = 31)[31])
-  md$accessionID <- settrl
-  md$platform <- ifelse(settrl == "GPL13534", "hm450k",
-                        ifelse(settrl == "GPL21145", "epic-hm850k",
-                               ifelse(settrl == "GPL8490", "hm27k", "NA")))
+  setting.lines <- readLines(sett.path)
+  platform.line <- setting.lines[grepl(".*platformid =.*", setting.lines)]
+  platform.acc<-gsub(".* |'","",platform.line);md$accessionID<-platform.acc
+  md$platform <- ifelse(platform.acc == "GPL13534", "hm450k",
+                        ifelse(platform.acc == "GPL21145", "epic-hm850k",
+                               ifelse(platform.acc=="GPL8490","hm27k","NA")))
   message("Saving new metadata...")
   md.fn <- paste0("metadata_v", gsub("\\.", "-", md$version), 
                   "_", md$timestamp, ".rda")
