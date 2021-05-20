@@ -79,9 +79,9 @@ get_idat_sizem <- function(idats.path = file.path("recount-methylation-files",
   md <- rmp_handle_metadata() # get instance metadata
   arrayid <- rmp_handle_platform()[["accid"]] # get the platform
   sfilt.max <- ifelse(arrayid == "GPL13534", 1e7,
-                      ifelse(arrayid == "GPL13534", 1e8, "NA"))
+                      ifelse(arrayid == "GPL21145", 1e8, "NA"))
   sfilt.min <- ifelse(arrayid == "GPL13534", 4e6,
-                      ifelse(arrayid == "GPL13534", 1e7, "NA"))
+                      ifelse(arrayid == "GPL21145", 1e7, "NA"))
   message("Using absolute size (bytes) filters ",
           "min = ", sfilt.min, ", max = ", sfilt.max, "...")
   message("Getting the file sizes matrix...")
