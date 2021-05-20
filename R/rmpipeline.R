@@ -161,7 +161,7 @@ dtables_rg <- function(platform = c("hm450k", "epic"), version, ts,
     if(verbose){message("Appending new data for ", length(gsmii)," chunks...")}
     if(platform == "hm450k"){
       require(minfiData); data(RGsetEx); rgi <- RGsetEx
-      } else if(platform == "epic"){
+      } else if(platform %in% c("epic", "epic-hm850k")){
         require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
         } else(stop("Error, invalid platform provided."))
     tt <- Sys.time(); probesv <- rownames(rgi)
@@ -207,7 +207,7 @@ dt_makefiles <- function(platform = c("hm450k", "epic"), hlinkv, idatspath,
   if(verbose){message("Getting platform data...")}
   if(platform == "hm450k"){
     require(minfiData); data(RGsetEx); rgi <- RGsetEx
-    } else if(platform == "epic"){
+    } else if(platform %in% c("epic", "epic-hm850k")){
       require(minfiDataEPIC); data(RGsetEPIC); rgi <- RGsetEPIC
       } else{stop("Error, invalid platform provided.")}
   rgcni <- colnames(t(minfi::getRed(rgi)));rgcn <- matrix(c(cn, rgcni),nrow=1)
@@ -429,8 +429,8 @@ h5_add_tables <- function(dsn, fnl, platform, fnpath, dbn, ngsm.block,verbose){
   if(verbose){message("for dsn ", dsn, " using fnread ", fnread, "...")}
   cnn = paste0(dsn,".colnames"); rnn = paste0(dsn, ".rownames"); rn = cn = c()
   if(verbose){message("Getting dims...")}
-  cmax <- ifelse(platform == "hm450k", 622399, ifelse(platform == "epic", 
-                                                      1052641, "NA"))
+  cmax <- ifelse(platform == "hm450k", 622399, 
+                 ifelse(platform %in% c("epic", "epic-hm850k"), 1052641, "NA"))
   if(cmax == "NA"){readline(prompt=paste0("Couldn't generate num. assays",
                                           " for platform. Enter cmax ",
                                           "(num. assays):"))}
@@ -582,7 +582,7 @@ make_h5se_rg <- function(platform = c("hm450k", "epic"),
   if(verbose){message("Setting annotation info...")}
   if(platform == "hm450k"){
     anno = c("IlluminaHumanMethylation450k", "ilmn12.hg19")
-    } else if(platform == "epic"){
+    } else if(platform %in% c("epic", "epic-hm850k")){
       anno = c("IlluminaHumanMethylationEPIC", "ilm10b2.hg19")
       } else{stop("Error, didn't recognize provided platform.")}
   names(anno) = c("array", "annotation")
@@ -637,8 +637,9 @@ make_h5_gm <- function(dbn, version, ts, blocksize = 65,
                        platform = c("hm450k", "epic"), 
                        newfnstem = "remethdb", verbose = TRUE,
                        dsv = c("meth", "unmeth"), replace.opt = TRUE){
-  if(platform == "hm450k"){num.assays = 485512} else if(platform == "epic"){
-    num.assays = 866836} else{stop("Error, didn't recognize platform.")}
+  if(platform == "hm450k"){num.assays = 485512
+  } else if(platform %in% c("epic", "epic-hm850k")){num.assays = 866836
+    } else{stop("Error, didn't recognize platform.")}
   rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn); num.samp <- ncol(rg)
   h5dbn <- paste(newfnstem, platform, "h5", "gm", 
                  gsub("\\.", "-", version), ts, sep = "_")
@@ -703,8 +704,9 @@ make_h5_gr <- function(dbn, version, ts, blocksize = 65,
                        comp.dname = "compilations",
                        verbose = TRUE, platform = c("hm450k", "epic"),
                        newfnstem = "remethdb", replace.opt = TRUE){
-  if(platform == "hm450k"){num.assays = 485512} else if(platform == "epic"){
-  num.assays = 866836} else{stop("Error, didn't recognize platform.")}
+  if(platform == "hm450k"){num.assays = 485512
+  } else if(platform %in% c("epic", "epic-hm850k")){num.assays = 866836
+  } else{stop("Error, didn't recognize platform.")}
   rg <- HDF5Array::loadHDF5SummarizedExperiment(dbn)
   num.samp <- ncol(rg); # gr <- preprocessNoob(rg)
   h5dbn <- paste(newfnstem, platform, "h5", "gr", ts,
@@ -789,8 +791,8 @@ make_h5se_gm <- function(dbn, version, ts, platform = c("hm450k", "epic"),
   if(verbose){message("Getting granges...")}
   if(platform == "hm450k"){require(minfiData)
     ms <- minfi::mapToGenome(get(data("MsetEx")))
-    } else if(platform == "epic"){require(minfiDataEPIC)
-      ms <- minfi::mapToGenome(get(data("MsetEPIC")))
+    } else if(platform %in% c("epic", "epic-hm850k")){
+      require(minfiDataEPIC); ms <- minfi::mapToGenome(get(data("MsetEPIC")))
       } else{stop("Error, didn't recognize platform.")}
   anno <- minfi::annotation(ms);gr <- GenomicRanges::granges(ms)
   message("Reading datasets.");meth <- HDF5Array::HDF5Array(dbn, "meth")
@@ -852,8 +854,8 @@ make_h5se_gr <- function(version, ts, dbn,
   if(verbose){message("Making new H5SE database: ", newfn)}
   if(platform == "hm450k"){require(minfiData)
     ms <- minfi::mapToGenome(get(data("MsetEx")))
-    } else if(platform == "epic"){require(minfiDataEPIC)
-      ms <- minfi::mapToGenome(get(data("MsetEPIC")))
+    } else if(platform %in% c("epic", "epic-hm850k")){
+      require(minfiDataEPIC); ms <- minfi::mapToGenome(get(data("MsetEPIC")))
       } else{stop("Error, provided platform isn't supported.")}
   anno <- minfi::annotation(ms);gr <- GenomicRanges::granges(ms)
   message("Reading datasets.");nbeta <- HDF5Array::HDF5Array(dbn, "noobbeta")
