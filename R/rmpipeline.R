@@ -293,7 +293,7 @@ dt_write_rg <- function(probesv, hlinkv, idatspath, reds.path, grns.path,
                         sepval = " ", verbose = TRUE){
   if(verbose){message("Reading data...")};
   pathl <- unique(file.path(idatspath, hlinkv))
-  rgi <- try(minfi::read.metharray(pathl))
+  rgi <- try(minfi::read.metharray(pathl, force = TRUE))
   if(!class(rgi) == "RGChannelSet"){
     message("Error reading chunk. Reading samples processively...")
     rgl <- lapply(pathl, function(x){try(minfi::read.metharray(x))})
