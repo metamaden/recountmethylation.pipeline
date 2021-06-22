@@ -158,11 +158,18 @@ get_jsontitle <- function(ts, json.dname = "gsm_json_filt",
 #' @param verbose Whether to show status messages (TRUE).
 #' @return NULL, stores aggregate/composite metadata table.
 #' @export
-md_agg <- function(ts, platform = NULL, lfn = NULL, id.cname = "gsm", mda.fn = "mdall",
+md_agg <- function(ts = NULL, platform = NULL, lfn = NULL, 
+                   id.cname = "gsm", mda.fn = "mdall",
                    md.fnv = c("^md_postprocess.*","^mdmod_dnam-predictions_.*",
                               "^mdqc_.*", "^mdrep_.*", "^md_msrapout_.*"),
                    md.dpath = file.path("recount-methylation-files",
                                         "metadata"), verbose = TRUE){
+  if(is.null(ts) | is.null(platform)){
+    message("Handling metadata options...");md <- rmp_handle_metadata()
+    if(is.null(md)){stop("Couldn't get metadata...")}
+    version <- md[["version"]]; ts <- md[["timestamp"]]
+    message("Getting platform info..."); accinfo <- rmp_handle_platform()
+    platform<-accinfo[["platform_name"]];message("Using platform: ",platform)}
   if(is.null(lfn)){
     if(verbose){message("Provided lfn is NULL, detecting metadata files...")}
     lfn <- list.files(md.dpath);lfn <- lfn[grepl(paste0(".*",ts,".*"),lfn)]
