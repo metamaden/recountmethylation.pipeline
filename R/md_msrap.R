@@ -34,20 +34,22 @@ get_msrap <- function(ts, files.dir = "recount-methylation-files", md.dname = "m
   wpath <- file.path(files.dir, md.dname, new.fn)
   rl <- list.files(rpath); rl <- rl[grepl(msrap.regex.str, rl)]
   gmap <- matrix(nrow = 0, ncol = 2);lfl.filt <- list.files(rpath)
-  for(f in rl){
+  for(fi in seq(length(rl))){f <- rl[fi]
     gsmi <- unlist(strsplit(f,"\\."))[gsmid.fnindex]
-    jfi <- jsonlite::fromJSON(txt = file.path(rpath, f), flatten=T)
-    xi <- jfi[,!colnames(jfi) %in% 
+    jfi <- try(jsonlite::fromJSON(txt = file.path(rpath, f), flatten=T))
+    if(!class(jfi) == "try-error"){
+      xi <- jfi[,!colnames(jfi) %in% 
                 c("mapped ontology terms", "real-value properties")]
-    pi <- paste0("'",names(xi),"':'",as.character(xi[1,]),"'",collapse=";")
-    if("real-value properties" %in% names(jfi)){
-      if(length(unlist(jfi[,"real-value properties"]))>0){
-        pi <- paste0(pi,";'real-value properties':",
-                     as.character(unlist(jfi[,"real-value properties"])),
-                     collapse="")}}
-    mot <- paste0(as.character(unlist(jfi[,"mapped ontology terms"])), collapse=";")
-    jfi.mapped.flat<-paste0(pi,";",mot)
-    gmapi<-matrix(c(gsmi,jfi.mapped.flat),nrow=1);gmap <- rbind(gmap, gmapi)}
+      pi <- paste0("'",names(xi),"':'",as.character(xi[1,]),"'",collapse=";")
+      if("real-value properties" %in% names(jfi)){
+        if(length(unlist(jfi[,"real-value properties"]))>0){
+          pi <- paste0(pi,";'real-value properties':",
+                       as.character(unlist(jfi[,"real-value properties"])),
+                       collapse="")}}
+      mot <- paste0(as.character(unlist(jfi[,"mapped ontology terms"])), collapse=";")
+      jfi.mapped.flat<-paste0(pi,";",mot)
+      gmapi<-matrix(c(gsmi,jfi.mapped.flat),nrow=1);gmap <- rbind(gmap, gmapi)
+    };message("Finished reading data for file: ", fi)}
   gmap <- as.data.frame(gmap, stringsAsFactors = FALSE)
   colnames(gmap) <- c("gsm", "msrapout")
   # get stype predictions

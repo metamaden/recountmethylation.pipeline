@@ -8,4 +8,4 @@
 
 library(recountmethylation.pipeline)
 
-suppressMessages(md_agg())
+md_agg()
