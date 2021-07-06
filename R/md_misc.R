@@ -45,7 +45,7 @@ get_atables <- function(ts, atable.fn = "geo_gse-atables_list",
   message("Getting paths...")
   eqdpath <- file.path(files.dname, eq.dname) # equery dir path
   eqd.ts <- max(as.numeric(gsub(".*\\.", "", list.files(eqdpath))))
-  eq.fpath <- get_eqfpath(ts = eqd.ts, eqdpath = eqdpath)
+  eq.fpath <- get_eqfpath(eqdpath = eqdpath)
   if(length(eq.fpath) == 0){
     stop("Couldn't find an equery file with ts ", eqd.ts," at ", eqdpath, ".")}
   eq.fn <- gsub(".*/", "", eq.fpath) # equery file name
