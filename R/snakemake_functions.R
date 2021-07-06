@@ -93,9 +93,7 @@ get_rg_dtables <- function(files.dname = "recount-methylation-files",
     message("Making new compilations dir: ",comp.dpath);dir.create(comp.dpath)}
   message("Handling metadata options...")
   md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform"]]
-  message("Using platform ", platform, "...")
+  platform <- md[["platform"]]; message("Using platform ", platform, "...")
   version <- md[["version"]]; ts <- md[["timestamp"]]
   dtables_rg(platform=platform, version=version, ts=ts, destpath=comp.dpath)
   return(NULL)
