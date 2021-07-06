@@ -76,8 +76,7 @@ get_idat_sizem <- function(idats.path = file.path("recount-methylation-files",
                                                  "idats"),
                           mdpath = file.path("recount-methylation-files", 
                                              "metadata")){
-  md <- rmp_handle_metadata() # get instance metadata
-  arrayid <- md[["accessionID"]] # get the platform
+  md <- rmp_handle_metadata(); arrayid <- md[["accessionID"]]
   sfilt.max <- ifelse(arrayid == "GPL13534", 1e7,
                       ifelse(arrayid == "GPL21145", 1e8, "NA"))
   sfilt.min <- ifelse(arrayid == "GPL13534", 4e6,

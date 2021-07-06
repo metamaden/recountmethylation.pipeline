@@ -5,7 +5,7 @@
 \title{Aggregate available metadata tables}
 \usage{
 md_agg(
-  ts,
+  ts = NULL,
   platform = NULL,
   lfn = NULL,
   id.cname = "gsm",
