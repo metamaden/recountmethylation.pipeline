@@ -176,10 +176,12 @@ md_agg <- function(ts = NULL, platform = NULL, lfn = NULL,
     lfn <- lfn[grepl(paste(md.fnv, collapse = "|"), lfn)]}
   if(verbose){message("Loading metadata files...")};ldat <- list()
   for(ii in seq(length(lfn))){
-    mdi <- get(load(file.path(md.dpath, lfn[ii])))
-    if("gsm" %in% colnames(mdi)){ldat[[lfn[ii]]] <- mdi} else{
-      message("Couldn't find sample ID column '",id.cname,
-              "' in file ",lfn[ii],". Skipping...")}}
+    mdi <- get(load(file.path(md.dpath, lfn[ii])));cnv <- colnames(mdi)
+    if(length(cnv[grepl(id.cname, colnames(mdi))]) > 0){
+      which.cnid <- which(grepl(id.cname, cnv))
+      colnames(mdi)[which.cnid]<-id.cname;ldat[[lfn[ii]]] <- mdi} else{
+      message("Couldn't find sample ID column in file ",lfn[ii],
+        ". Skipping...")}}
   if(verbose){message("Getting all sample IDs...")}
   idv <- unique(unlist(lapply(ldat, function(x){
     return(as.character(x[,id.cname]))})))
