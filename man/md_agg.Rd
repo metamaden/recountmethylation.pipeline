@@ -11,7 +11,7 @@ md_agg(
   id.cname = "gsm",
   mda.fn = "mdall",
   md.fnv = c("^md_postprocess.*", "^mdmod_dnam-predictions_.*", "^mdqc_.*",
-    "^mdrep_.*", "^md_msrapout_.*"),
+    "^mdrep_.*", "^md_msrapout_.*", "gsm_jsontitledf_.*"),
   md.dpath = file.path("recount-methylation-files", "metadata"),
   verbose = TRUE
 )

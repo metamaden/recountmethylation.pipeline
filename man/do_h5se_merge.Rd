@@ -4,7 +4,13 @@
 \alias{do_h5se_merge}
 \title{Merge 2 h5se objects with all pdata columns}
 \usage{
-do_h5se_merge(h5se1.fpath, h5se2.fpath, new.h5se.dpath, h5se.merge.fname)
+do_h5se_merge(
+  h5se1.fpath,
+  h5se2.fpath,
+  new.h5se.dpath,
+  h5se.merge.fname,
+  replace = TRUE
+)
 }
 \arguments{
 \item{h5se1.fpath}{Path to the first h5se object.}
@@ -14,6 +20,8 @@ do_h5se_merge(h5se1.fpath, h5se2.fpath, new.h5se.dpath, h5se.merge.fname)
 \item{new.h5se.dpath}{Path to the directory to contain the merged h5se object.}
 
 \item{h5se.merge.fname}{Name of the new merged h5se object.}
+
+\item{replace}{Whether to replace existing merged h5se object at path.}
 }
 \value{
 Null, saves new merged h5se object.
