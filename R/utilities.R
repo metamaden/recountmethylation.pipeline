@@ -394,3 +394,51 @@ rmp_handle_platform <- function(settings.fname = "settings.py",
                          ifelse(accid == "GPL8490", "hm27k", "NA")))
   return(list(accid = accid, platform_name = pname))
 }
+
+#-------------------
+# merge h5se objects
+#-------------------
+
+#' Merge 2 h5se objects with all pdata columns
+#'
+#' Performs a merge on 2 h5se objects, retaining all unique pdata columns
+#' between them.
+#'
+#' @param h5se1.fpath Path to the first h5se object.
+#' @param h5se2.fpath Path to the second h5se object.
+#' @param new.h5se.dpath Path to the directory to contain the merged h5se object.
+#' @param h5se.merge.fname Name of the new merged h5se object.
+#' @return Null, saves new merged h5se object.
+#' @export
+do_h5se_merge <- function(h5se1.fpath, h5se2.fpath, new.h5se.dpath, 
+    h5se.merge.fname){
+    message("Loading h5se data...")
+    # check for exsitence of h5se objects
+    if(!file.exists(h5se1.fpath)){stop("Path ", h5se1.fpath, " isn't valid.")}
+    if(!file.exists(h5se2.fpath)){stop("Path ", h5se2.fpath, " isn't valid.")}
+    # load the h5se objects
+    h5se1 <- HDF5Array::loadHDF5SummarizedExperiment(h5se1.fpath)
+    h5se2 <- HDF5Array::loadHDF5SummarizedExperiment(h5se2.fpath)
+    message("Merging pdata...");pd1 <- as.data.frame(pData(h5se1)); 
+    pd2 <- as.data.frame(pData(h5se2));cn1 <- colnames(pData(h5se1)); 
+    cn2 <- colnames(pData(h5se2));cn.out1 <- cn2[!cn2 %in% cn1]
+    cn.out2 <- cn1[!cn1 %in% cn2];cnv <- unique(c(cn1, cn2))
+    message("Found ",length(cn.out1), " colnames in h5se1 absent in h5se2...")
+    message("Found ",length(cn.out1), " colnames in h5se2 absent in h5se1...")
+    if(length(cn.out1) > 0){for(cni in cn.out1){
+        pd1$cni <- "NA"; colnames(pd1)[ncol(pd1)] <- cni}}
+    if(length(cn.out2) > 0){for(cni in cn.out2){
+        pd2$cni <- "NA"; colnames(pd2)[ncol(pd2)] <- cni}}
+    pd1 <- pd1[,order(match(colnames(pd1), colnames(pd2)))]
+    cond <- identical(colnames(pd1), colnames(pd2))
+    if(cond){pd3 <- rbind(pd2, pd1)}else{
+        stop("Couldn't merge pdata; unique column names not matched.")}
+    pData(h5se2) <- DataFrame(pd2); pData(h5se1) <- DataFrame(pd1)
+    message("Binding h5se data on merged pdata...");h5se3 <- cbind(h5se2,h5se1)
+    if(!dir.exists(new.h5se.dpath)){
+        message("Making new dir ", new.h5se.dpath);dir.create(new.h5se.dpath)}
+    new.h5sepath <- file.path(new.h5se.dpath, h5se.merge.fname)
+    message("Saving merged h5se data as ",new.h5sepath,"...")
+    HDF5Array::saveHDF5SummarizedExperiment(h5se3, new.h5sepath)
+    return(NULL)
+}
