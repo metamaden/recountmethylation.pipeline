@@ -119,8 +119,7 @@ get_h5db_rg <- function(files.dpath = "recount-methylation-files",
   md <- rmp_handle_metadata(); 
   if(md == "NA"){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]]
+  message("Getting platform info..."); platform <- md[["platform"]]
   message("Using platform: ", platform)
   message("Checking for signal compilation tables...")
   vform <- gsub("\\.", "-", version)
