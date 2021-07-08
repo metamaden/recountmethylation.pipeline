@@ -68,6 +68,7 @@ md_predictions <- function(ts, rgset.fname, grset.fname,
                         "Choosing lowest column count for sample indexing...")}
     col.tot <- ifelse(ncol(rgset) > ncol(grset), ncol(grset), ncol(rgset))
   } else{ncol.tot <- ncol(rgset)};blocks <- getblocks(ncol.tot, nsamp.block)
+  
   if(length(blocks[[length(blocks)]]) == 1 & length(blocks) == 1){
     stop("Detected 1 block of 1 sample. Sample blocks should have > 1 sample.")
   } else if(length(blocks[[length(blocks)]]) == 1 & length(blocks) > 1){
@@ -101,7 +102,7 @@ md_predictions <- function(ts, rgset.fname, grset.fname,
   if(verbose){message("Formatting mdmod...")}
   mdmod <- as.data.frame(mdmod, stringsAsFactors = FALSE)
   colnames(mdmod) <- c("predage", "predsex", 
-                       paste0("predcell.", colnames(mdmod)[3:8]))
+    paste0("predcell.", c("CD8T", "CD4T", "NK", "Bcell", "Mono", "Gran")))
   mdmod$gsm<-gsub("\\..*", "",rownames(mdmod))
   mdmod<-mdmod[!duplicated(mdmod$gsm),]
   mdmod.fpath <- file.path(md.dpath, paste0(mdmod.fname,"_", ts, ".rda"))
