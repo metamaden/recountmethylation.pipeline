@@ -25,7 +25,7 @@
 #' @param gmap.fn File name stem of the new mapped metadata table 
 #' ("md_msrapout").
 #' @return NULL, outputs the mapped data table to the metadata directory.
-#' @export
+#' @exportlist
 get_msrap <- function(ts, files.dir = "recount-methylation-files", md.dname = "metadata",
                       msrap.dname = "gsm_msrap_outfiles", msrap.regex.str = "^msrapout.*",
                       gsmid.fnindex = 2, gmap.fn = "md_msrapout"){

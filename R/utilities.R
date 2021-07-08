@@ -408,10 +408,11 @@ rmp_handle_platform <- function(settings.fname = "settings.py",
 #' @param h5se2.fpath Path to the second h5se object.
 #' @param new.h5se.dpath Path to the directory to contain the merged h5se object.
 #' @param h5se.merge.fname Name of the new merged h5se object.
+#' @param replace Whether to replace existing merged h5se object at path.
 #' @return Null, saves new merged h5se object.
 #' @export
 do_h5se_merge <- function(h5se1.fpath, h5se2.fpath, new.h5se.dpath, 
-    h5se.merge.fname){
+    h5se.merge.fname, replace = TRUE){
     message("Loading h5se data...")
     # check for exsitence of h5se objects
     if(!file.exists(h5se1.fpath)){stop("Path ", h5se1.fpath, " isn't valid.")}
@@ -439,6 +440,6 @@ do_h5se_merge <- function(h5se1.fpath, h5se2.fpath, new.h5se.dpath,
         message("Making new dir ", new.h5se.dpath);dir.create(new.h5se.dpath)}
     new.h5sepath <- file.path(new.h5se.dpath, h5se.merge.fname)
     message("Saving merged h5se data as ",new.h5sepath,"...")
-    HDF5Array::saveHDF5SummarizedExperiment(h5se3, new.h5sepath)
+    HDF5Array::saveHDF5SummarizedExperiment(h5se3, new.h5sepath, replace = replace)
     return(NULL)
 }

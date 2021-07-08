@@ -161,7 +161,8 @@ get_jsontitle <- function(ts, json.dname = "gsm_json_filt",
 md_agg <- function(ts = NULL, platform = NULL, lfn = NULL, 
                    id.cname = "gsm", mda.fn = "mdall",
                    md.fnv = c("^md_postprocess.*","^mdmod_dnam-predictions_.*",
-                              "^mdqc_.*", "^mdrep_.*", "^md_msrapout_.*"),
+                              "^mdqc_.*", "^mdrep_.*", "^md_msrapout_.*", 
+                              "gsm_jsontitledf_.*"),
                    md.dpath = file.path("recount-methylation-files",
                                         "metadata"), verbose = TRUE){
   if(is.null(ts) | is.null(platform)){
@@ -178,7 +179,7 @@ md_agg <- function(ts = NULL, platform = NULL, lfn = NULL,
   for(ii in seq(length(lfn))){
     mdi <- get(load(file.path(md.dpath, lfn[ii])));cnv <- colnames(mdi)
     if(length(cnv[grepl(id.cname, colnames(mdi))]) > 0){
-      which.cnid <- which(grepl(id.cname, cnv))
+      which.cnid <- which(grepl(id.cname, cnv)[1])
       colnames(mdi)[which.cnid]<-id.cname;ldat[[lfn[ii]]] <- mdi} else{
       message("Couldn't find sample ID column in file ",lfn[ii],
         ". Skipping...")}}
@@ -188,7 +189,7 @@ md_agg <- function(ts = NULL, platform = NULL, lfn = NULL,
   mda <- as.matrix(data.frame(id = idv, stringsAsFactors = FALSE))
   colnames(mda) <- id.cname; rownames(mda) <- mda[,1]
   if(verbose){
-    message("Detected ",length(idv)," unique sample IDs. Coercing tables...")}
+    message("Detected ",length(idv)," unique sample IDs. Coercing tables...")}  
   for(ii in seq(length(ldat))){
     tname <- names(ldat)[ii]
     mdt <- as.matrix(ldat[[ii]]); mdt.gsmv <- as.character(mdt[,id.cname])

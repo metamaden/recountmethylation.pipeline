@@ -78,15 +78,25 @@ md_predictions <- function(ts, rgset.fname, grset.fname,
   } else{if(verbose){message("No singleton blocks found. Continuing...")}}
   if(verbose){message("Getting predictions...")};mdmod<-matrix(nrow=0,ncol=8)
   for(b in blocks){
+    # prep data subsets
     rgf <- rgset[, unlist(b)] # sex and cell preds use raw red/grn signals
     rgf.matrix <- minfi::RGChannelSet(Green = as.matrix(minfi::getGreen(rgf)),
                                       Red = as.matrix(minfi::getRed(rgf)),
                                       annotation=BiocGenerics::annotation(rgf))
-    celltypepred <- minfi::estimateCellCounts(rgf.matrix)
     msf <- minfi::mapToGenome(minfi::preprocessRaw(rgf))
-    sexpred <- minfi::getSex(msf);grf <- grset[,colnames(rgf)]
-    predage<-wateRmelon::agep(minfi::getBeta(grf)) # age pred from noob'd bvals
-    mdf<-cbind(predage,cbind(sexpred[,3],celltypepred));mdmod<-rbind(mdmod,mdf)
+    grf <- grset[,colnames(rgf)]
+    # get predictions or na matrices on failure
+    celltypepred <- try(minfi::estimateCellCounts(rgf.matrix))
+    if(class(celltypepred) == "try-error"){
+      celltypepred <- matrix(nrow=length(b), ncol = 6)}
+    sexpred <- try(minfi::getSex(msf))
+    if(class(sexpred) == "try-error"){
+      sexpred <- matrix(nrow=length(b), ncol = 3)} 
+    predage <- try(wateRmelon::agep(minfi::getBeta(grf))) # use noob bvals
+    if(class(predage) == "try-error"){
+      sexpred <- matrix(nrow=length(b), ncol = 1)}
+    mdf <- cbind(predage, cbind(sexpred[,3], celltypepred))
+    mdmod<-rbind(mdmod,mdf)
     if(verbose){message("Completed index ", max(unlist(b)))}}
   if(verbose){message("Formatting mdmod...")}
   mdmod <- as.data.frame(mdmod, stringsAsFactors = FALSE)
