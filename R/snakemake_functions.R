@@ -152,8 +152,8 @@ get_h5se_rg <- function(files.dpath = "recount-methylation-files",
   message("Handling metadata options...")
   md <- rmp_handle_metadata(); if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");
+  platform <- md[["platform"]];message("Using platform: ", platform)
   message("Checking for valid HDF5 RGChannelSet file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_rg.*",lfv)]
@@ -182,8 +182,8 @@ get_h5db_gm <- function(files.dpath = "recount-methylation-files",
   md <- rmp_handle_metadata(); if(is.null(md)){
     stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Checking for h5se RGChannelSet database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)]
@@ -214,8 +214,8 @@ get_h5se_gm <- function(files.dpath = "recount-methylation-files",
   message("Handling metadata options...");md <- rmp_handle_metadata()
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info..."); platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Checking for valid HDF5 MethylSet ('gm') database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv<-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_gm.*",lfv)]
@@ -245,8 +245,8 @@ get_h5db_gr <- function(files.dpath = "recount-methylation-files",
   md <- rmp_handle_metadata(); if(is.null(md)){
     stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");
+  platform <- md[["platform"]];message("Using platform: ", platform)
   message("Checking for h5se RGChannelSet database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <- lfv[grepl(vform, lfv) & grepl(ts, lfv)]
@@ -276,8 +276,8 @@ get_h5se_gr <- function(files.dpath = "recount-methylation-files",
   message("Handling metadata options...");md <- rmp_handle_metadata()
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Checking for valid HDF5 `gr` set database file...")
   vform <- gsub("\\.", "-", version);lfv <- list.files(comp.dpath)
   lfv <-lfv[grepl(vform,lfv)&grepl(ts,lfv)];lfv<-lfv[grepl(".*h5_gr.*",lfv)]
@@ -308,8 +308,8 @@ get_mdmap <- function(files.dname = "recount-methylation-files",
   message("Handling metadata options...");md <- rmp_handle_metadata()
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Mining sample/GSM titles...");get_jsontitle(ts = ts)
   message("Getting study annotation tables from JSON files...")
   suppressMessages(get_atables(ts = ts))
@@ -342,8 +342,8 @@ get_mddnam <- function(files.dname = "recount-methylation-files",
   message("Handling metadata options...");md <- rmp_handle_metadata()
   if(is.null(md)){stop("Couldn't get metadata...")}
   version <- md[["version"]]; ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info..."); platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Detecting DNAm compilations...")
   comp.dpath <- file.path(files.dname, comp.dname)
   comp.lf <- list.files(comp.dpath)
@@ -385,8 +385,8 @@ get_all_md <- function(files.dname = "recount-methylation-files",
                        md.dname = "metadata", comp.dname = "compilations"){
   message("Handling metadata options...");md <- rmp_handle_metadata()
   if(is.null(md)){stop("Couldn't get metadata...")};ts <- md[["timestamp"]]
-  message("Getting platform info..."); accinfo <- rmp_handle_platform()
-  platform <- accinfo[["platform_name"]];message("Using platform: ", platform)
+  message("Getting platform info...");platform <- md[["platform"]];
+  message("Using platform: ", platform)
   message("Aggregating metadata...");md_agg(ts = ts, platform = platform)
   return(NULL)
 }
