@@ -13,7 +13,7 @@
 #' and "map_msrap.py" script. Data is read and stored as a flat table ready to
 #' be appended to other metadata for the instance.
 #' 
-#' @param ts NTP timestamp for the new metadata table (string).
+#' @param ts NTP timestamp for the new metadata table (string, NULL).
 #' @param files.dir Files dir for the instance ("recount-methylation-files").
 #' @param md.dname Metadata dir name, located in the files.dir ("metadata").
 #' @param msrap.dname Name of dir, located in the files.dir, containing 
@@ -26,9 +26,10 @@
 #' ("md_msrapout").
 #' @return NULL, outputs the mapped data table to the metadata directory.
 #' @exportlist
-get_msrap <- function(ts, files.dir = "recount-methylation-files", md.dname = "metadata",
+get_msrap <- function(ts = NULL, files.dir = "recount-methylation-files", md.dname = "metadata",
                       msrap.dname = "gsm_msrap_outfiles", msrap.regex.str = "^msrapout.*",
                       gsmid.fnindex = 2, gmap.fn = "md_msrapout"){
+  if(is.null(ts)){ts <- rmp_handle_metadata()[["timestamp"]]}
   rpath <- file.path(files.dir, msrap.dname)
   new.fn <- paste0(paste(c(gmap.fn, ts), collapse = "_"), ".rda")
   wpath <- file.path(files.dir, md.dname, new.fn)
